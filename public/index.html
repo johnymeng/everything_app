@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finance Tracker</title>
+    <style>
+      :root {
+        --bg: #f5f6f8;
+        --surface: #ffffff;
+        --text: #13223a;
+        --subtle: #5d6a7b;
+        --border: #d8dee8;
+        --accent: #0a7f5a;
+        --danger: #b13f3f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background: linear-gradient(160deg, #eef3ff 0%, #f8f4ef 55%, #f5f6f8 100%);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 18px;
+      }
+
+      .subtitle {
+        margin-top: 6px;
+        color: var(--subtle);
+        font-size: 0.95rem;
+      }
+
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      }
+
+      button.primary {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .card-title {
+        color: var(--subtle);
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+      }
+
+      .metric {
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      .metric.debt {
+        color: var(--danger);
+      }
+
+      section {
+        margin-top: 18px;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      th {
+        color: var(--subtle);
+        font-weight: 600;
+      }
+
+      .status {
+        margin-top: 12px;
+        color: var(--subtle);
+        font-size: 0.9rem;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      @media (max-width: 700px) {
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topbar">
+        <div>
+          <h1>Personal Finance Tracker</h1>
+          <p class="subtitle">Connect EQ Bank, Wealthsimple, TD, and Amex. Track investments, cash, savings, and debt.</p>
+        </div>
+        <div class="button-row">
+          <button class="primary" id="syncAllButton">Sync All</button>
+        </div>
+      </div>
+
+      <section>
+        <h2>Connect Providers</h2>
+        <p class="subtitle">Local sandbox mode is enabled by default. Replace connectors with live API integrations when ready.</p>
+        <div class="button-row" id="providerButtons"></div>
+      </section>
+
+      <section class="grid" id="summaryCards"></section>
+
+      <section class="card">
+        <h2>Connected Accounts</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th>Account</th>
+                <th>Type</th>
+                <th>Balance</th>
+                <th>Last Sync</th>
+              </tr>
+            </thead>
+            <tbody id="accountsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Holdings</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Liabilities</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th>Name</th>
+                <th>Kind</th>
+                <th>Balance</th>
+                <th>Interest %</th>
+              </tr>
+            </thead>
+            <tbody id="liabilitiesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p id="statusText" class="status"></p>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
