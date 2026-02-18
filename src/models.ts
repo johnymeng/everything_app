@@ -44,6 +44,16 @@ export interface ConnectionCredential {
   accessToken: string;
   itemId?: string;
   institutionId?: string;
+  snaptradeUserId?: string;
+  snaptradeUserSecret?: string;
+  eqEmail?: string;
+  eqPassword?: string;
+  eqStepupType?: string;
+  eqQuestionCode?: string;
+  eqQuestionAnswer?: string;
+  eqTrustDevice?: boolean;
+  eqClientOS?: string;
+  eqClientVersion?: string;
 }
 
 export interface Account {
@@ -104,6 +114,9 @@ export interface FinanceStore {
   holdings: Holding[];
   liabilities: Liability[];
   transactions: Transaction[];
+  healthConnections: HealthConnection[];
+  fitnessSamples: FitnessSample[];
+  fitnessTargets: FitnessTarget[];
 }
 
 export interface ProviderSummary {
@@ -128,4 +141,80 @@ export interface FinanceSummary {
     liabilities: number;
     transactions: number;
   };
+}
+
+export const fitnessMetrics = [
+  "vo2_max",
+  "resting_heart_rate",
+  "heart_rate_variability",
+  "sleep_hours",
+  "steps",
+  "workout_minutes",
+  "body_weight",
+  "squat_1rm",
+  "bench_1rm",
+  "deadlift_1rm",
+  "mile_time"
+] as const;
+
+export type FitnessMetric = (typeof fitnessMetrics)[number];
+export type FitnessSampleSource = "apple_health" | "manual";
+export type HealthProvider = "apple_health";
+export type HealthConnectionMode = "mock" | "shortcut_push";
+
+export interface HealthConnection {
+  id: string;
+  userId: string;
+  provider: HealthProvider;
+  status: ConnectionStatus;
+  mode: HealthConnectionMode;
+  createdAt: string;
+  updatedAt: string;
+  lastSyncedAt?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface FitnessSample {
+  id: string;
+  userId: string;
+  metric: FitnessMetric;
+  value: number;
+  unit: string;
+  source: FitnessSampleSource;
+  recordedAt: string;
+}
+
+export interface FitnessTarget {
+  id: string;
+  userId: string;
+  metric: FitnessMetric;
+  label: string;
+  targetValue: number;
+  unit: string;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FitnessTargetProgress {
+  target: FitnessTarget;
+  currentValue?: number;
+  gap?: number;
+  status: "hit" | "on_track" | "off_track" | "no_data";
+}
+
+export interface SuggestedFitnessTarget {
+  metric: FitnessMetric;
+  label: string;
+  targetValue: number;
+  unit: string;
+  reason: string;
+}
+
+export interface FitnessDashboard {
+  connection: HealthConnection | null;
+  latest: FitnessSample[];
+  targetProgress: FitnessTargetProgress[];
+  suggestedTargets: SuggestedFitnessTarget[];
+  insights: string[];
 }

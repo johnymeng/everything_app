@@ -1,5 +1,7 @@
 import {
   AccountType,
+  Connection,
+  ConnectionCredential,
   LiabilityKind,
   Provider,
   TransactionDirection
@@ -55,15 +57,23 @@ export interface SyncPayload {
   transactions: SyncedTransaction[];
 }
 
-export interface ConnectResult {
+export interface LinkTokenResult {
+  linkToken: string;
+  expiration?: string;
+  mode: string;
+}
+
+export interface ExchangeResult {
   displayName: string;
   metadata?: Record<string, string>;
+  credential: ConnectionCredential;
 }
 
 export interface ProviderConnector {
   provider: Provider;
   displayName: string;
   mode: string;
-  connect(userId: string): Promise<ConnectResult>;
-  sync(connectionId: string, userId: string): Promise<SyncPayload>;
+  createLinkToken(userId: string): Promise<LinkTokenResult>;
+  exchangePublicToken(userId: string, publicToken: string): Promise<ExchangeResult>;
+  sync(connection: Connection, credential: ConnectionCredential): Promise<SyncPayload>;
 }

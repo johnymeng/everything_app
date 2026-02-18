@@ -1,28 +1,19 @@
-import crypto from "node:crypto";
 import {
   Account,
   Connection,
+  ConnectionCredential,
   FinanceSummary,
   Holding,
-  Liability,
   Provider,
-  providers,
-  Transaction
+  providers
 } from "../models";
-import { JsonStore } from "../store";
+import { PostgresRepository } from "../db/postgresRepository";
 import { getConnectorByProvider, listConnectors } from "../connectors";
+import { decryptString, encryptString } from "../security/encryption";
 
 const assetTypeSet = new Set(["cash", "chequing", "savings", "investment", "other"]);
 const liquidityTypeSet = new Set(["cash", "chequing", "savings"]);
 const liabilityTypeSet = new Set(["credit_card", "loan", "line_of_credit", "mortgage"]);
-
-function scopedId(connectionId: string, scope: string, externalId: string): string {
-  return `${connectionId}:${scope}:${externalId}`;
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
 
 function sum(values: number[]): number {
   return Number(values.reduce((total, value) => total + value, 0).toFixed(2));
@@ -39,7 +30,7 @@ function accountInvestmentValue(account: Account, holdings: Holding[]): number {
 }
 
 export class FinanceService {
-  constructor(private readonly store: JsonStore) {}
+  constructor(private readonly repository: PostgresRepository) {}
 
   listProviders(): Array<{ provider: Provider; displayName: string; status: string; mode: string }> {
     return listConnectors().map((connector) => ({
@@ -50,162 +41,95 @@ export class FinanceService {
     }));
   }
 
-  listConnections(userId?: string): Connection[] {
-    const state = this.store.read();
+  async createLinkToken(userId: string, provider: Provider): Promise<{ linkToken: string; mode: string }> {
+    const connector = getConnectorByProvider(provider);
+    const result = await connector.createLinkToken(userId);
 
-    if (!userId) {
-      return state.connections;
-    }
-
-    return state.connections.filter((connection) => connection.userId === userId);
+    return {
+      linkToken: result.linkToken,
+      mode: result.mode
+    };
   }
 
-  async connectProvider(userId: string, provider: Provider): Promise<Connection> {
-    const state = this.store.read();
-    const existingConnection = state.connections.find(
-      (connection) => connection.userId === userId && connection.provider === provider && connection.status === "connected"
-    );
-
-    if (existingConnection) {
-      return existingConnection;
-    }
-
+  async exchangePublicToken(userId: string, provider: Provider, publicToken: string): Promise<Connection> {
     const connector = getConnectorByProvider(provider);
-    const connectResult = await connector.connect(userId);
-    const timestamp = nowIso();
+    const result = await connector.exchangePublicToken(userId, publicToken);
+    const encryptedCredential = encryptString(JSON.stringify(result.credential));
 
-    const connection: Connection = {
-      id: crypto.randomUUID(),
+    const connection = await this.repository.upsertConnection({
       userId,
       provider,
       status: "connected",
-      displayName: connectResult.displayName,
-      metadata: connectResult.metadata,
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-
-    state.connections.push(connection);
-    this.store.write(state);
+      displayName: result.displayName,
+      metadata: result.metadata,
+      encryptedCredential,
+      institutionId: result.credential.institutionId,
+      itemId: result.credential.itemId
+    });
 
     return connection;
   }
 
-  async syncConnection(connectionId: string): Promise<{
+  async listConnections(userId: string): Promise<Connection[]> {
+    return this.repository.listConnections(userId);
+  }
+
+  async syncConnection(userId: string, connectionId: string): Promise<{
     connection: Connection;
     synced: { accounts: number; holdings: number; liabilities: number; transactions: number };
   }> {
-    const state = this.store.read();
-    const connectionIndex = state.connections.findIndex((item) => item.id === connectionId);
+    const connection = await this.repository.getConnectionById(userId, connectionId);
 
-    if (connectionIndex < 0) {
+    if (!connection) {
       throw new Error(`Connection '${connectionId}' was not found.`);
     }
 
-    const connection = state.connections[connectionIndex];
+    const encryptedCredential = await this.repository.getConnectionCredential(userId, connectionId);
+
+    if (!encryptedCredential) {
+      await this.repository.markConnectionStatus(userId, connectionId, "error");
+      throw new Error(`Connection '${connectionId}' is missing provider credentials.`);
+    }
+
+    const credential = JSON.parse(decryptString(encryptedCredential)) as ConnectionCredential;
     const connector = getConnectorByProvider(connection.provider);
-    const payload = await connector.sync(connection.id, connection.userId);
-    const syncedAt = nowIso();
 
-    state.accounts = state.accounts.filter((account) => account.connectionId !== connection.id);
-    state.holdings = state.holdings.filter((holding) => !holding.id.startsWith(`${connection.id}:holding:`));
-    state.liabilities = state.liabilities.filter((liability) => !liability.id.startsWith(`${connection.id}:liability:`));
-    state.transactions = state.transactions.filter(
-      (transaction) => !transaction.id.startsWith(`${connection.id}:transaction:`)
-    );
+    try {
+      const payload = await connector.sync(connection, credential);
+      const syncedAt = new Date().toISOString();
+      const synced = await this.repository.replaceConnectionData(connection, payload, syncedAt);
 
-    const accounts: Account[] = payload.accounts.map((syncedAccount) => ({
-      id: scopedId(connection.id, "account", syncedAccount.externalId),
-      connectionId: connection.id,
-      provider: connection.provider,
-      name: syncedAccount.name,
-      type: syncedAccount.type,
-      currency: syncedAccount.currency,
-      balance: syncedAccount.balance,
-      institutionName: syncedAccount.institutionName,
-      lastSyncedAt: syncedAt
-    }));
+      const updatedConnection = await this.repository.getConnectionById(userId, connectionId);
 
-    const accountIdByExternalId = new Map(
-      payload.accounts.map((syncedAccount) => [
-        syncedAccount.externalId,
-        scopedId(connection.id, "account", syncedAccount.externalId)
-      ])
-    );
-
-    const holdings: Holding[] = payload.holdings.map((syncedHolding) => ({
-      id: scopedId(connection.id, "holding", syncedHolding.externalId),
-      accountId: accountIdByExternalId.get(syncedHolding.accountExternalId) ?? "",
-      symbol: syncedHolding.symbol,
-      name: syncedHolding.name,
-      quantity: syncedHolding.quantity,
-      unitPrice: syncedHolding.unitPrice,
-      value: syncedHolding.value,
-      currency: syncedHolding.currency,
-      lastPriceAt: syncedAt
-    }));
-
-    const liabilities: Liability[] = payload.liabilities.map((syncedLiability) => ({
-      id: scopedId(connection.id, "liability", syncedLiability.externalId),
-      accountId: accountIdByExternalId.get(syncedLiability.accountExternalId) ?? "",
-      provider: connection.provider,
-      kind: syncedLiability.kind,
-      name: syncedLiability.name,
-      balance: syncedLiability.balance,
-      interestRate: syncedLiability.interestRate,
-      minimumPayment: syncedLiability.minimumPayment,
-      currency: syncedLiability.currency,
-      dueDate: syncedLiability.dueDate,
-      lastSyncedAt: syncedAt
-    }));
-
-    const transactions: Transaction[] = payload.transactions.map((syncedTransaction) => ({
-      id: scopedId(connection.id, "transaction", syncedTransaction.externalId),
-      accountId: accountIdByExternalId.get(syncedTransaction.accountExternalId) ?? "",
-      provider: connection.provider,
-      date: syncedTransaction.date,
-      description: syncedTransaction.description,
-      category: syncedTransaction.category,
-      amount: syncedTransaction.amount,
-      direction: syncedTransaction.direction,
-      currency: syncedTransaction.currency
-    }));
-
-    state.accounts.push(...accounts);
-    state.holdings.push(...holdings.filter((item) => item.accountId));
-    state.liabilities.push(...liabilities.filter((item) => item.accountId));
-    state.transactions.push(...transactions.filter((item) => item.accountId));
-
-    state.connections[connectionIndex] = {
-      ...connection,
-      updatedAt: syncedAt,
-      status: "connected"
-    };
-
-    this.store.write(state);
-
-    return {
-      connection: state.connections[connectionIndex],
-      synced: {
-        accounts: accounts.length,
-        holdings: holdings.length,
-        liabilities: liabilities.length,
-        transactions: transactions.length
+      if (!updatedConnection) {
+        throw new Error("Connection disappeared after sync.");
       }
-    };
+
+      return {
+        connection: updatedConnection,
+        synced
+      };
+    } catch (error) {
+      await this.repository.markConnectionStatus(userId, connectionId, "error");
+      throw error;
+    }
   }
 
   async syncAllConnections(userId: string): Promise<
     Array<{ connectionId: string; provider: Provider; status: "ok" | "error"; message?: string }>
   > {
-    const connections = this.listConnections(userId);
+    const connections = await this.repository.listConnections(userId);
 
     const results: Array<{ connectionId: string; provider: Provider; status: "ok" | "error"; message?: string }> = [];
 
     for (const connection of connections) {
       try {
-        await this.syncConnection(connection.id);
-        results.push({ connectionId: connection.id, provider: connection.provider, status: "ok" });
+        await this.syncConnection(userId, connection.id);
+        results.push({
+          connectionId: connection.id,
+          provider: connection.provider,
+          status: "ok"
+        });
       } catch (error) {
         results.push({
           connectionId: connection.id,
@@ -219,47 +143,30 @@ export class FinanceService {
     return results;
   }
 
-  getAccounts(userId: string): Account[] {
-    const state = this.store.read();
-    const userConnectionIds = new Set(this.listConnections(userId).map((connection) => connection.id));
-
-    return state.accounts
-      .filter((account) => userConnectionIds.has(account.connectionId))
-      .sort((left, right) => right.lastSyncedAt.localeCompare(left.lastSyncedAt));
+  async getAccounts(userId: string): Promise<Account[]> {
+    return this.repository.getAccounts(userId);
   }
 
-  getHoldings(userId: string): Holding[] {
-    const accounts = this.getAccounts(userId);
-    const accountIds = new Set(accounts.map((account) => account.id));
-    const state = this.store.read();
-
-    return state.holdings.filter((holding) => accountIds.has(holding.accountId));
+  async getHoldings(userId: string) {
+    return this.repository.getHoldings(userId);
   }
 
-  getLiabilities(userId: string): Liability[] {
-    const accounts = this.getAccounts(userId);
-    const accountIds = new Set(accounts.map((account) => account.id));
-    const state = this.store.read();
-
-    return state.liabilities.filter((liability) => accountIds.has(liability.accountId));
+  async getLiabilities(userId: string) {
+    return this.repository.getLiabilities(userId);
   }
 
-  getTransactions(userId: string, limit = 100): Transaction[] {
-    const accounts = this.getAccounts(userId);
-    const accountIds = new Set(accounts.map((account) => account.id));
-    const state = this.store.read();
-
-    return state.transactions
-      .filter((transaction) => accountIds.has(transaction.accountId))
-      .sort((left, right) => right.date.localeCompare(left.date))
-      .slice(0, limit);
+  async getTransactions(userId: string, limit = 100) {
+    return this.repository.getTransactions(userId, limit);
   }
 
-  getSummary(userId: string): FinanceSummary {
-    const accounts = this.getAccounts(userId);
-    const holdings = this.getHoldings(userId);
-    const liabilities = this.getLiabilities(userId);
-    const transactions = this.getTransactions(userId, 5000);
+  async getSummary(userId: string): Promise<FinanceSummary> {
+    const [connections, accounts, holdings, liabilities, transactions] = await Promise.all([
+      this.repository.listConnections(userId),
+      this.repository.getAccounts(userId),
+      this.repository.getHoldings(userId),
+      this.repository.getLiabilities(userId),
+      this.repository.getTransactions(userId, 5000)
+    ]);
 
     const cashAndSavings = sum(
       accounts
@@ -272,7 +179,12 @@ export class FinanceService {
 
     const otherAssets = sum(
       accounts
-        .filter((account) => assetTypeSet.has(account.type) && !liquidityTypeSet.has(account.type) && account.type !== "investment")
+        .filter(
+          (account) =>
+            assetTypeSet.has(account.type) &&
+            !liquidityTypeSet.has(account.type) &&
+            account.type !== "investment"
+        )
         .map((account) => Math.max(account.balance, 0))
     );
 
@@ -304,7 +216,10 @@ export class FinanceService {
           .map((account) => accountInvestmentValue(account, holdings))
       );
 
-      const providerDebtFromLiabilities = sum(providerLiabilities.map((liability) => Math.max(liability.balance, 0)));
+      const providerDebtFromLiabilities = sum(
+        providerLiabilities.map((liability) => Math.max(liability.balance, 0))
+      );
+
       const providerDebtFromAccounts = sum(
         providerAccounts
           .filter((account) => liabilityTypeSet.has(account.type))
@@ -329,7 +244,7 @@ export class FinanceService {
       },
       providers: providerBreakdown,
       counts: {
-        connections: this.listConnections(userId).length,
+        connections: connections.length,
         accounts: accounts.length,
         liabilities: liabilities.length,
         transactions: transactions.length

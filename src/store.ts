@@ -7,7 +7,10 @@ const emptyStore: FinanceStore = {
   accounts: [],
   holdings: [],
   liabilities: [],
-  transactions: []
+  transactions: [],
+  healthConnections: [],
+  fitnessSamples: [],
+  fitnessTargets: []
 };
 
 export class JsonStore {
@@ -34,7 +37,10 @@ export class JsonStore {
       accounts: parsed.accounts ?? [],
       holdings: parsed.holdings ?? [],
       liabilities: parsed.liabilities ?? [],
-      transactions: parsed.transactions ?? []
+      transactions: parsed.transactions ?? [],
+      healthConnections: parsed.healthConnections ?? [],
+      fitnessSamples: parsed.fitnessSamples ?? [],
+      fitnessTargets: parsed.fitnessTargets ?? []
     };
   }
 
