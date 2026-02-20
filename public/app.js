@@ -8,7 +8,8 @@ const labels = {
   eq_bank: "EQ Bank",
   wealthsimple: "Wealthsimple",
   td: "TD",
-  amex: "Amex"
+  amex: "Amex",
+  manual_csv: "Manual CSV"
 };
 
 const authPanel = document.getElementById("authPanel");
@@ -28,6 +29,13 @@ const liabilitiesBody = document.getElementById("liabilitiesBody");
 const userLabel = document.getElementById("userLabel");
 const modeHint = document.getElementById("modeHint");
 const statusText = document.getElementById("statusText");
+const csvInstitutionInput = document.getElementById("csvInstitutionInput");
+const csvAccountNameInput = document.getElementById("csvAccountNameInput");
+const csvAccountTypeInput = document.getElementById("csvAccountTypeInput");
+const csvCurrencyInput = document.getElementById("csvCurrencyInput");
+const csvDayFirstInput = document.getElementById("csvDayFirstInput");
+const csvFileInput = document.getElementById("csvFileInput");
+const csvImportButton = document.getElementById("csvImportButton");
 
 function setStatus(message, isError = false) {
   statusText.textContent = message;
@@ -254,6 +262,35 @@ async function connectProvider(provider) {
       publicToken = `mock-public-token:${provider.provider}:${Date.now()}`;
     } else if (provider.mode === "eq_mobile_api") {
       publicToken = buildEqMobileAuthToken();
+    } else if (provider.mode === "manual_holdings") {
+      const example = JSON.stringify(
+        {
+          accounts: [
+            {
+              name: "TFSA",
+              cash: 123.45,
+              holdings: [
+                { symbol: "XEQT", quantity: 10 },
+                { symbol: "VCN", quantity: 5 }
+              ]
+            },
+            {
+              name: "RRSP",
+              cash: 0,
+              holdings: [{ symbol: "VFV", quantity: 20 }]
+            }
+          ]
+        },
+        null,
+        2
+      );
+
+      const json = promptRequired(
+        `Paste Wealthsimple holdings JSON (CAD). Example:\n\n${example}\n\nTip: if a ticker needs an explicit quote symbol, add { \"quoteSymbol\": \"XEQT.TO\" }.`,
+        "Holdings JSON"
+      );
+
+      publicToken = `manual-holdings:${encodeBase64Utf8(json)}`;
     } else if (provider.mode === "snaptrade") {
       window.open(link.linkToken, "_blank", "noopener,noreferrer");
       const confirmed = window.confirm(
@@ -282,6 +319,44 @@ async function connectProvider(provider) {
   }
 }
 
+async function importCsvStatement() {
+  const file = csvFileInput.files?.[0];
+
+  if (!file) {
+    setStatus("Choose a CSV file first.", true);
+    return;
+  }
+
+  try {
+    setStatus(`Reading CSV file: ${file.name}...`);
+    const csvText = await file.text();
+    const payload = {
+      provider: "manual_csv",
+      csvText,
+      institutionName: csvInstitutionInput.value.trim() || undefined,
+      defaultAccountName: csvAccountNameInput.value.trim() || undefined,
+      defaultAccountType: csvAccountTypeInput.value || undefined,
+      defaultCurrency: csvCurrencyInput.value.trim().toUpperCase() || undefined,
+      dayFirst: Boolean(csvDayFirstInput.checked)
+    };
+
+    setStatus("Importing CSV...");
+    const result = await api("/import/csv", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    await refreshData();
+
+    setStatus(
+      `CSV imported: ${result.imported.transactions} transactions across ${result.imported.accounts} account(s).`
+    );
+    csvFileInput.value = "";
+  } catch (error) {
+    setStatus(error.message || "CSV import failed.", true);
+  }
+}
+
 function renderProviderButtons() {
   providerButtons.innerHTML = "";
 
@@ -296,13 +371,18 @@ function renderProviderButtons() {
   const anyLive = state.providers.some((provider) => provider.mode === "plaid");
   const anyEqMobile = state.providers.some((provider) => provider.mode === "eq_mobile_api");
   const anySnaptrade = state.providers.some((provider) => provider.mode === "snaptrade");
-  modeHint.textContent = anyEqMobile
+  const anyManualHoldings = state.providers.some((provider) => provider.mode === "manual_holdings");
+  const connectorHint = anyEqMobile
     ? "EQ Bank mobile API mode is enabled. You will be prompted for EQ credentials and step-up details."
+    : anyManualHoldings
+      ? "Manual holdings mode is enabled for Wealthsimple. Paste your per-account positions JSON, then sync to compute market value."
     : anyLive
-    ? "Plaid Link is enabled for one or more providers."
-    : anySnaptrade
-      ? "SnapTrade mode is enabled for Wealthsimple. Follow the browser-based connection flow."
-      : "All providers are in mock mode. Update env to switch providers to plaid/eq_mobile_api/snaptrade mode.";
+      ? "Plaid Link is enabled for one or more providers."
+      : anySnaptrade
+        ? "SnapTrade mode is enabled for Wealthsimple. Follow the browser-based connection flow."
+        : "All providers are in mock mode. Update env to switch providers to plaid/eq_mobile_api/snaptrade mode.";
+
+  modeHint.textContent = `${connectorHint} CSV statement import is always available below.`;
 }
 
 async function refreshData() {
@@ -412,5 +492,7 @@ syncAllButton.addEventListener("click", async () => {
     setStatus(error.message || "Sync failed.", true);
   }
 });
+
+csvImportButton.addEventListener("click", importCsvStatement);
 
 restoreSession();

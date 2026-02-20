@@ -188,6 +188,12 @@ const payloads: Record<Provider, SyncPayload> = {
         currency: "CAD"
       }
     ]
+  },
+  manual_csv: {
+    accounts: [],
+    holdings: [],
+    liabilities: [],
+    transactions: []
   }
 };
 

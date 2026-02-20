@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
       credentials: true
     })
   );
-  app.use(express.json());
+  app.use(express.json({ limit: "10mb" }));
   app.use(morgan("dev"));
 
   app.use("/api", createApiRouter(financeService, fitnessService, authService));
@@ -53,6 +53,35 @@ async function bootstrap(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log(`${config.appName} listening on http://localhost:${config.port}`);
   });
+
+  const intervalMinutes = config.jobs.autoSyncIntervalMinutes;
+  if (Number.isFinite(intervalMinutes) && intervalMinutes > 0) {
+    let running = false;
+
+    const runAutoSync = async () => {
+      if (running) {
+        return;
+      }
+
+      running = true;
+
+      try {
+        const userIds = await repository.listUserIds();
+        for (const userId of userIds) {
+          await financeService.syncAllConnections(userId);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Auto sync failed", error);
+      } finally {
+        running = false;
+      }
+    };
+
+    // Run soon after startup, then on a fixed interval.
+    setTimeout(runAutoSync, 2000);
+    setInterval(runAutoSync, intervalMinutes * 60 * 1000);
+  }
 
   process.on("SIGINT", async () => {
     await repository.close();

@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { z } from "zod";
-import { fitnessMetrics, providers } from "../models";
+import { fitnessMetrics } from "../models";
 import { AuthService } from "../auth/authService";
 import { AuthenticatedRequest, createAuthMiddleware } from "../auth/middleware";
 import { FinanceService } from "../services/financeService";
 import { FitnessService } from "../services/fitnessService";
+
+const connectableProviders = ["eq_bank", "wealthsimple", "td", "amex"] as const;
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -18,7 +20,7 @@ const loginSchema = z.object({
 });
 
 const providerParamSchema = z.object({
-  provider: z.enum(providers)
+  provider: z.enum(connectableProviders)
 });
 
 const exchangeSchema = z.object({
@@ -57,6 +59,33 @@ const addManualFitnessSampleSchema = z.object({
   value: z.number().finite(),
   unit: z.string().min(1).max(24).optional(),
   recordedAt: z.string().datetime().optional()
+});
+
+const accountTypeSchema = z.enum([
+  "cash",
+  "chequing",
+  "savings",
+  "investment",
+  "credit_card",
+  "loan",
+  "line_of_credit",
+  "mortgage",
+  "other"
+]);
+
+const csvImportSchema = z.object({
+  provider: z.enum(["manual_csv"]).optional(),
+  csvText: z.string().min(1),
+  institutionName: z.string().min(1).max(120).optional(),
+  defaultAccountName: z.string().min(1).max(120).optional(),
+  defaultAccountType: accountTypeSchema.optional(),
+  defaultCurrency: z
+    .string()
+    .min(3)
+    .max(3)
+    .transform((value) => value.toUpperCase())
+    .optional(),
+  dayFirst: z.boolean().optional()
 });
 
 function asyncHandler(handler: (request: Request, response: Response) => Promise<void>) {
@@ -206,6 +235,16 @@ export function createApiRouter(
     requireAuth,
     asyncHandler(async (request, response) => {
       response.json(await financeService.getSummary(currentUserId(request)));
+    })
+  );
+
+  router.post(
+    "/import/csv",
+    requireAuth,
+    asyncHandler(async (request, response) => {
+      const body = csvImportSchema.parse(request.body ?? {});
+      const result = await financeService.importStatementCsv(currentUserId(request), body);
+      response.status(201).json(result);
     })
   );
 

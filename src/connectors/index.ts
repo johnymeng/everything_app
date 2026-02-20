@@ -1,6 +1,7 @@
 import { config } from "../config";
 import { Provider } from "../models";
 import { EqBankMobileConnector } from "./eqBankMobileConnector";
+import { ManualHoldingsConnector } from "./manualHoldingsConnector";
 import { MockConnector } from "./mockConnector";
 import { PlaidConnector } from "./plaidConnector";
 import { SnapTradeConnector } from "./snapTradeConnector";
@@ -60,8 +61,16 @@ function createConnector(configItem: ProviderConfig): ProviderConnector {
     return new SnapTradeConnector(configItem.provider, configItem.displayName);
   }
 
+  if (configItem.mode === "manual_holdings") {
+    if (configItem.provider !== "wealthsimple") {
+      throw new Error("manual_holdings mode is only supported for wealthsimple provider.");
+    }
+
+    return new ManualHoldingsConnector(configItem.provider, configItem.displayName);
+  }
+
   throw new Error(
-    `Unsupported mode '${configItem.mode}' for ${configItem.provider}. Use 'mock', 'plaid', 'eq_mobile_api', or 'snaptrade'.`
+    `Unsupported mode '${configItem.mode}' for ${configItem.provider}. Use 'mock', 'plaid', 'eq_mobile_api', 'snaptrade', or 'manual_holdings'.`
   );
 }
 

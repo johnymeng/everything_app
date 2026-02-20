@@ -1,4 +1,4 @@
-export const providers = ["eq_bank", "wealthsimple", "td", "amex"] as const;
+export const providers = ["eq_bank", "wealthsimple", "td", "amex", "manual_csv"] as const;
 
 export type Provider = (typeof providers)[number];
 

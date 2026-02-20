@@ -1,5 +1,6 @@
 import {
   Account,
+  AccountType,
   Connection,
   ConnectionCredential,
   FinanceSummary,
@@ -10,6 +11,7 @@ import {
 import { PostgresRepository } from "../db/postgresRepository";
 import { getConnectorByProvider, listConnectors } from "../connectors";
 import { decryptString, encryptString } from "../security/encryption";
+import { parseStatementCsv } from "./csvStatementParser";
 
 const assetTypeSet = new Set(["cash", "chequing", "savings", "investment", "other"]);
 const liquidityTypeSet = new Set(["cash", "chequing", "savings"]);
@@ -27,6 +29,24 @@ function accountInvestmentValue(account: Account, holdings: Holding[]): number {
   }
 
   return Math.max(account.balance, 0);
+}
+
+const providerDisplayName: Record<Provider, string> = {
+  eq_bank: "EQ Bank",
+  wealthsimple: "Wealthsimple",
+  td: "TD Canada Trust",
+  amex: "American Express",
+  manual_csv: "Manual CSV Import"
+};
+
+export interface ImportCsvStatementInput {
+  provider?: Provider;
+  csvText: string;
+  institutionName?: string;
+  defaultAccountName?: string;
+  defaultAccountType?: AccountType;
+  defaultCurrency?: string;
+  dayFirst?: boolean;
 }
 
 export class FinanceService {
@@ -84,6 +104,18 @@ export class FinanceService {
       throw new Error(`Connection '${connectionId}' was not found.`);
     }
 
+    if (connection.provider === "manual_csv") {
+      return {
+        connection,
+        synced: {
+          accounts: 0,
+          holdings: 0,
+          liabilities: 0,
+          transactions: 0
+        }
+      };
+    }
+
     const encryptedCredential = await this.repository.getConnectionCredential(userId, connectionId);
 
     if (!encryptedCredential) {
@@ -123,6 +155,16 @@ export class FinanceService {
     const results: Array<{ connectionId: string; provider: Provider; status: "ok" | "error"; message?: string }> = [];
 
     for (const connection of connections) {
+      if (connection.provider === "manual_csv") {
+        results.push({
+          connectionId: connection.id,
+          provider: connection.provider,
+          status: "ok",
+          message: "Manual CSV connection is refreshed via CSV import."
+        });
+        continue;
+      }
+
       try {
         await this.syncConnection(userId, connection.id);
         results.push({
@@ -141,6 +183,70 @@ export class FinanceService {
     }
 
     return results;
+  }
+
+  async importStatementCsv(
+    userId: string,
+    input: ImportCsvStatementInput
+  ): Promise<{
+    connection: Connection;
+    imported: { rowsRead: number; rowsImported: number; rowsSkipped: number; accounts: number; transactions: number };
+    detectedColumns: Record<string, string>;
+  }> {
+    const provider = input.provider ?? "manual_csv";
+
+    if (provider !== "manual_csv") {
+      throw new Error("CSV import currently supports only provider 'manual_csv'.");
+    }
+
+    const parsed = parseStatementCsv({
+      csvText: input.csvText,
+      institutionName: input.institutionName,
+      defaultAccountName: input.defaultAccountName,
+      defaultAccountType: input.defaultAccountType,
+      defaultCurrency: input.defaultCurrency,
+      dayFirst: input.dayFirst
+    });
+
+    const connection = await this.repository.upsertConnection({
+      userId,
+      provider,
+      status: "connected",
+      displayName: input.institutionName?.trim() || providerDisplayName[provider],
+      metadata: {
+        source: "csv_import",
+        rowsImported: String(parsed.rowsImported),
+        importedAt: new Date().toISOString()
+      }
+    });
+
+    const syncedAt = new Date().toISOString();
+    const imported = await this.repository.upsertImportedConnectionData(
+      connection,
+      {
+        accounts: parsed.accounts,
+        transactions: parsed.transactions
+      },
+      syncedAt
+    );
+
+    const updatedConnection = await this.repository.getConnectionById(userId, connection.id);
+
+    if (!updatedConnection) {
+      throw new Error("Connection disappeared after CSV import.");
+    }
+
+    return {
+      connection: updatedConnection,
+      imported: {
+        rowsRead: parsed.rowsRead,
+        rowsImported: parsed.rowsImported,
+        rowsSkipped: parsed.rowsSkipped,
+        accounts: imported.accounts,
+        transactions: imported.transactions
+      },
+      detectedColumns: parsed.detectedColumns
+    };
   }
 
   async getAccounts(userId: string): Promise<Account[]> {

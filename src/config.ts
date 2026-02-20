@@ -50,6 +50,18 @@ export const config = {
     tdMode: process.env.TD_MODE ?? "mock",
     amexMode: process.env.AMEX_MODE ?? "mock"
   },
+  quotes: {
+    // Free, keyless quote providers are inherently less reliable than paid APIs.
+    provider: process.env.QUOTE_PROVIDER ?? "stooq",
+    defaultSuffix: process.env.QUOTE_DEFAULT_SUFFIX ?? ".TO",
+    cdrSuffix: process.env.QUOTE_CDR_SUFFIX ?? ".NE",
+    timeoutMs: Number.parseInt(process.env.QUOTE_TIMEOUT_MS ?? "8000", 10),
+    maxConcurrency: Number.parseInt(process.env.QUOTE_MAX_CONCURRENCY ?? "6", 10)
+  },
+  jobs: {
+    // Runs best for single-user/self-host. Keep disabled by default.
+    autoSyncIntervalMinutes: Number.parseInt(process.env.AUTO_SYNC_INTERVAL_MINUTES ?? "0", 10)
+  },
   eqBank: {
     baseUrl: process.env.EQ_BANK_API_BASE_URL ?? "https://mobile-api.eqbank.ca/mobile/v1.1/",
     authorization:

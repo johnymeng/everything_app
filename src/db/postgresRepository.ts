@@ -258,6 +258,11 @@ export class PostgresRepository {
     this.pool = new Pool({ connectionString });
   }
 
+  async listUserIds(): Promise<string[]> {
+    const result = await this.pool.query(`SELECT id FROM users ORDER BY created_at ASC`);
+    return result.rows.map((row: Record<string, unknown>) => String(row.id));
+  }
+
   async initialize(): Promise<void> {
     await this.pool.query(SCHEMA_SQL);
   }
@@ -549,6 +554,113 @@ export class PostgresRepository {
         accounts: accountCount,
         holdings: holdingCount,
         liabilities: liabilityCount,
+        transactions: transactionCount
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async upsertImportedConnectionData(
+    connection: Connection,
+    payload: Pick<SyncPayload, "accounts" | "transactions">,
+    syncedAt: string
+  ): Promise<{ accounts: number; transactions: number }> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const accountIdByExternalId = new Map<string, string>();
+      const accountIds: string[] = [];
+      let accountCount = 0;
+      let transactionCount = 0;
+
+      for (const account of payload.accounts) {
+        const accountId = `${connection.id}:account:${account.externalId}`;
+        accountIdByExternalId.set(account.externalId, accountId);
+        accountIds.push(accountId);
+
+        await client.query(
+          `INSERT INTO accounts (
+             id, connection_id, provider, name, type, currency, balance, institution_name, last_synced_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id)
+           DO UPDATE SET
+             provider = EXCLUDED.provider,
+             name = EXCLUDED.name,
+             type = EXCLUDED.type,
+             currency = EXCLUDED.currency,
+             balance = EXCLUDED.balance,
+             institution_name = EXCLUDED.institution_name,
+             last_synced_at = EXCLUDED.last_synced_at`,
+          [
+            accountId,
+            connection.id,
+            connection.provider,
+            account.name,
+            account.type,
+            account.currency,
+            account.balance,
+            account.institutionName,
+            syncedAt
+          ]
+        );
+
+        accountCount += 1;
+      }
+
+      if (accountIds.length > 0) {
+        await client.query(`DELETE FROM transactions WHERE account_id = ANY($1::text[])`, [accountIds]);
+        await client.query(`DELETE FROM holdings WHERE account_id = ANY($1::text[])`, [accountIds]);
+        await client.query(`DELETE FROM liabilities WHERE account_id = ANY($1::text[])`, [accountIds]);
+      }
+
+      for (const transaction of payload.transactions) {
+        const accountId = accountIdByExternalId.get(transaction.accountExternalId);
+
+        if (!accountId) {
+          continue;
+        }
+
+        await client.query(
+          `INSERT INTO transactions (
+             id, account_id, provider, date, description, category, amount, direction, currency
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id)
+           DO UPDATE SET
+             account_id = EXCLUDED.account_id,
+             provider = EXCLUDED.provider,
+             date = EXCLUDED.date,
+             description = EXCLUDED.description,
+             category = EXCLUDED.category,
+             amount = EXCLUDED.amount,
+             direction = EXCLUDED.direction,
+             currency = EXCLUDED.currency`,
+          [
+            `${connection.id}:transaction:${transaction.externalId}`,
+            accountId,
+            connection.provider,
+            transaction.date,
+            transaction.description,
+            transaction.category,
+            transaction.amount,
+            transaction.direction,
+            transaction.currency
+          ]
+        );
+
+        transactionCount += 1;
+      }
+
+      await client.query(`UPDATE connections SET updated_at = NOW(), status = 'connected' WHERE id = $1`, [connection.id]);
+      await client.query("COMMIT");
+
+      return {
+        accounts: accountCount,
         transactions: transactionCount
       };
     } catch (error) {
