@@ -1,8 +1,8 @@
 import { config } from "../config";
 import { Provider } from "../models";
+import { DisabledConnector } from "./disabledConnector";
 import { EqBankMobileConnector } from "./eqBankMobileConnector";
 import { ManualHoldingsConnector } from "./manualHoldingsConnector";
-import { MockConnector } from "./mockConnector";
 import { PlaidConnector } from "./plaidConnector";
 import { SnapTradeConnector } from "./snapTradeConnector";
 import { ProviderConnector } from "./types";
@@ -37,15 +37,22 @@ const providerConfigs: ProviderConfig[] = [
 ];
 
 function createConnector(configItem: ProviderConfig): ProviderConnector {
-  if (configItem.mode === "mock") {
-    return new MockConnector(configItem.provider, configItem.displayName);
+  // Backwards compatibility: mock mode removed; treat as disabled.
+  const mode = configItem.mode === "mock" ? "disabled" : configItem.mode;
+
+  if (mode === "disabled") {
+    return new DisabledConnector(
+      configItem.provider,
+      configItem.displayName,
+      `Provider '${configItem.provider}' is disabled. Set ${configItem.provider.toUpperCase()}_MODE to enable it.`
+    );
   }
 
-  if (configItem.mode === "plaid") {
+  if (mode === "plaid") {
     return new PlaidConnector(configItem.provider, configItem.displayName);
   }
 
-  if (configItem.mode === "eq_mobile_api") {
+  if (mode === "eq_mobile_api") {
     if (configItem.provider !== "eq_bank") {
       throw new Error("eq_mobile_api mode is only supported for eq_bank provider.");
     }
@@ -53,7 +60,7 @@ function createConnector(configItem: ProviderConfig): ProviderConnector {
     return new EqBankMobileConnector(configItem.provider, configItem.displayName);
   }
 
-  if (configItem.mode === "snaptrade") {
+  if (mode === "snaptrade") {
     if (configItem.provider !== "wealthsimple") {
       throw new Error("snaptrade mode is only supported for wealthsimple provider.");
     }
@@ -61,7 +68,7 @@ function createConnector(configItem: ProviderConfig): ProviderConnector {
     return new SnapTradeConnector(configItem.provider, configItem.displayName);
   }
 
-  if (configItem.mode === "manual_holdings") {
+  if (mode === "manual_holdings") {
     if (configItem.provider !== "wealthsimple") {
       throw new Error("manual_holdings mode is only supported for wealthsimple provider.");
     }
@@ -70,7 +77,7 @@ function createConnector(configItem: ProviderConfig): ProviderConnector {
   }
 
   throw new Error(
-    `Unsupported mode '${configItem.mode}' for ${configItem.provider}. Use 'mock', 'plaid', 'eq_mobile_api', 'snaptrade', or 'manual_holdings'.`
+    `Unsupported mode '${configItem.mode}' for ${configItem.provider}. Use 'disabled', 'plaid', 'eq_mobile_api', 'snaptrade', or 'manual_holdings'.`
   );
 }
 

@@ -274,106 +274,6 @@ function buildInsights(
   return insights;
 }
 
-function createMockSyncSamples(): SyncSampleInput[] {
-  const checkpoints = [
-    {
-      daysAgo: 14,
-      vo2: 41.2,
-      rhr: 61,
-      hrv: 36,
-      sleep: 6.4,
-      steps: 8100,
-      minutes: 38,
-      bw: 82.5,
-      squat: 120,
-      bench: 90,
-      deadlift: 150,
-      mile: 470
-    },
-    {
-      daysAgo: 10,
-      vo2: 41.8,
-      rhr: 60,
-      hrv: 38,
-      sleep: 6.6,
-      steps: 8500,
-      minutes: 42,
-      bw: 82.3,
-      squat: 123,
-      bench: 92,
-      deadlift: 154,
-      mile: 466
-    },
-    {
-      daysAgo: 7,
-      vo2: 42.3,
-      rhr: 59,
-      hrv: 40,
-      sleep: 6.9,
-      steps: 9200,
-      minutes: 45,
-      bw: 82,
-      squat: 126,
-      bench: 94,
-      deadlift: 158,
-      mile: 462
-    },
-    {
-      daysAgo: 3,
-      vo2: 43.1,
-      rhr: 58,
-      hrv: 43,
-      sleep: 7.1,
-      steps: 9800,
-      minutes: 51,
-      bw: 81.8,
-      squat: 129,
-      bench: 96,
-      deadlift: 162,
-      mile: 458
-    },
-    {
-      daysAgo: 0,
-      vo2: 43.8,
-      rhr: 57,
-      hrv: 45,
-      sleep: 7.2,
-      steps: 10300,
-      minutes: 54,
-      bw: 81.6,
-      squat: 132,
-      bench: 98,
-      deadlift: 166,
-      mile: 454
-    }
-  ];
-
-  const now = new Date();
-  const samples: SyncSampleInput[] = [];
-
-  for (const checkpoint of checkpoints) {
-    const recordedAt = new Date(now);
-    recordedAt.setUTCDate(recordedAt.getUTCDate() - checkpoint.daysAgo);
-    const timestamp = recordedAt.toISOString();
-
-    samples.push(
-      { metric: "vo2_max", value: checkpoint.vo2, unit: "ml/kg/min", recordedAt: timestamp },
-      { metric: "resting_heart_rate", value: checkpoint.rhr, unit: "bpm", recordedAt: timestamp },
-      { metric: "heart_rate_variability", value: checkpoint.hrv, unit: "ms", recordedAt: timestamp },
-      { metric: "sleep_hours", value: checkpoint.sleep, unit: "hours", recordedAt: timestamp },
-      { metric: "steps", value: checkpoint.steps, unit: "steps", recordedAt: timestamp },
-      { metric: "workout_minutes", value: checkpoint.minutes, unit: "min", recordedAt: timestamp },
-      { metric: "body_weight", value: checkpoint.bw, unit: "kg", recordedAt: timestamp },
-      { metric: "squat_1rm", value: checkpoint.squat, unit: "kg", recordedAt: timestamp },
-      { metric: "bench_1rm", value: checkpoint.bench, unit: "kg", recordedAt: timestamp },
-      { metric: "deadlift_1rm", value: checkpoint.deadlift, unit: "kg", recordedAt: timestamp },
-      { metric: "mile_time", value: checkpoint.mile, unit: "s", recordedAt: timestamp }
-    );
-  }
-
-  return samples;
-}
-
 export class FitnessService {
   constructor(private readonly repository: PostgresRepository) {}
 
@@ -383,14 +283,17 @@ export class FitnessService {
 
   async syncAppleHealth(userId: string, samples?: SyncSampleInput[]): Promise<{ imported: number; dashboard: FitnessDashboard }> {
     const now = nowIso();
-    const syncSamples = samples && samples.length > 0 ? samples : createMockSyncSamples();
-    const mode = samples && samples.length > 0 ? "shortcut_push" : "mock";
+    const syncSamples = samples && samples.length > 0 ? samples : [];
+
+    if (syncSamples.length === 0) {
+      throw new Error("Apple Health sync requires a payload. Paste JSON samples into the Fitness page first.");
+    }
 
     await this.repository.upsertHealthConnection({
       userId,
       provider: "apple_health",
       status: "connected",
-      mode,
+      mode: "shortcut_push",
       metadata: {
         sampleCount: String(syncSamples.length)
       },

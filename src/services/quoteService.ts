@@ -215,7 +215,12 @@ export async function fetchLastPrices(symbols: string[]): Promise<Map<string, nu
   }
 
   if (provider === "yahoo") {
-    return await fetchYahooLastPrices(uniqueSymbols);
+    try {
+      return await fetchYahooLastPrices(uniqueSymbols);
+    } catch (_error) {
+      // Allow callers with a unitPrice fallback to proceed.
+      return prices;
+    }
   }
 
   if (provider !== "stooq") {
@@ -223,8 +228,12 @@ export async function fetchLastPrices(symbols: string[]): Promise<Map<string, nu
   }
 
   await runWithConcurrency(uniqueSymbols, config.quotes.maxConcurrency, async (symbol) => {
-    const price = await fetchStooqLastPrice(symbol);
-    prices.set(symbol, price);
+    try {
+      const price = await fetchStooqLastPrice(symbol);
+      prices.set(symbol, price);
+    } catch (_error) {
+      // Leave missing. Callers can decide how to handle missing symbols.
+    }
   });
 
   return prices;

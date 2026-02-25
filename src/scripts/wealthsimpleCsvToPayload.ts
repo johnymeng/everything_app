@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildManualHoldingsPayloadFromWealthsimpleCsvFiles } from "../services/wealthsimpleTransactionsCsvParser";
+import { buildManualHoldingsPayloadFromWealthsimpleCsv } from "../services/wealthsimpleCsvPortfolioBuilder";
 
 async function main(): Promise<void> {
   const filePaths = process.argv.slice(2).filter(Boolean);
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     }))
   );
 
-  const payload = buildManualHoldingsPayloadFromWealthsimpleCsvFiles(files);
+  const payload = buildManualHoldingsPayloadFromWealthsimpleCsv(files);
 
   // eslint-disable-next-line no-console
   console.log(JSON.stringify(payload, null, 2));

@@ -1,3 +1,5 @@
+import "./search.js";
+
 const state = {
   token: localStorage.getItem("finance_tracker_token") || "",
   user: null,
@@ -60,12 +62,45 @@ async function api(path, options = {}) {
     }
   });
 
+  const contentType = response.headers.get("content-type") || "";
+  const bodyText = await response.text().catch(() => "");
+  const trimmed = bodyText.trim();
+
+  const parseBody = () => {
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(bodyText);
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const payload = parseBody();
+
   if (!response.ok) {
-    const payload = await response.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(payload.error || "Request failed");
+    const errorMessage =
+      payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? payload.error
+        : contentType.includes("text/html") || trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")
+          ? "API returned HTML instead of JSON. Make sure you are running the Express server and opening the app from it (default: http://localhost:4000)."
+          : `Request failed (${response.status}).`;
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  if (payload !== null) {
+    return payload;
+  }
+
+  if (contentType.includes("text/html") || trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")) {
+    throw new Error(
+      "API returned HTML instead of JSON. Make sure you are running the Express server and opening the app from it (default: http://localhost:4000)."
+    );
+  }
+
+  return null;
 }
 
 function metricMeta(metric) {
@@ -115,9 +150,8 @@ function renderConnection(connection) {
   }
 
   const syncedAt = connection.lastSyncedAt ? new Date(connection.lastSyncedAt).toLocaleString() : "never";
-  const modeText = connection.mode === "shortcut_push" ? "Apple payload sync" : "mock sync";
-  connectionLabel.textContent = `Status: ${connection.status}. Last sync: ${syncedAt}. Mode: ${modeText}.`;
-  connectionBadge.textContent = connection.mode === "shortcut_push" ? "Apple Health" : "Mock Health";
+  connectionLabel.textContent = `Status: ${connection.status}. Last sync: ${syncedAt}. Mode: Apple payload sync.`;
+  connectionBadge.textContent = "Apple Health";
 }
 
 function renderLatest(latest) {
@@ -186,7 +220,7 @@ function renderTargets(targetProgress) {
       <td>${gap}</td>
       <td>${dueDate}</td>
       <td>${statusPill(entry.status)}</td>
-      <td><button data-target-id="${entry.target.id}">Delete</button></td>
+      <td><button class="danger" data-target-id="${entry.target.id}">Delete</button></td>
     `;
 
     const deleteButton = row.querySelector("button");
@@ -287,7 +321,7 @@ async function refreshDashboard() {
 function parsePayload() {
   const raw = payloadInput.value.trim();
   if (!raw) {
-    return {};
+    throw new Error("Paste Apple Health JSON payload first.");
   }
 
   let parsed;

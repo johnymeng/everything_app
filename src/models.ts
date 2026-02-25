@@ -76,6 +76,7 @@ export interface Holding {
   quantity: number;
   unitPrice: number;
   value: number;
+  costBasis?: number;
   currency: string;
   lastPriceAt: string;
 }
@@ -160,7 +161,7 @@ export const fitnessMetrics = [
 export type FitnessMetric = (typeof fitnessMetrics)[number];
 export type FitnessSampleSource = "apple_health" | "manual";
 export type HealthProvider = "apple_health";
-export type HealthConnectionMode = "mock" | "shortcut_push";
+export type HealthConnectionMode = "shortcut_push";
 
 export interface HealthConnection {
   id: string;
@@ -217,4 +218,87 @@ export interface FitnessDashboard {
   targetProgress: FitnessTargetProgress[];
   suggestedTargets: SuggestedFitnessTarget[];
   insights: string[];
+}
+
+export interface Habit {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+  archivedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HabitLogEntry {
+  id: string;
+  userId: string;
+  habitId: string;
+  date: string;
+  completed: boolean;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyPhotoMeta {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD (local date key)
+  takenAt: string; // ISO timestamp
+  contentType: string;
+  caption?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const learningInterestAreas = ["software", "hardware", "trivia"] as const;
+export type LearningInterestArea = (typeof learningInterestAreas)[number];
+
+export interface LearningPreference {
+  userId: string;
+  interestArea: LearningInterestArea;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningTopic {
+  key: string;
+  interestArea: LearningInterestArea;
+  title: string;
+  overview: string;
+  minutes: number;
+  plan: string[];
+  quizPrompts: string[];
+  takeaways: string[];
+  resources?: Array<{ label: string; url: string }>;
+}
+
+export interface LearningProgress {
+  id: string;
+  userId: string;
+  topicKey: string;
+  interestArea: LearningInterestArea;
+  learnedAt: string;
+  reviewStage: number;
+  nextReviewAt: string;
+  lastReviewedAt?: string;
+  reviewCount: number;
+  correctStreak: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningSuggestion {
+  kind: "new" | "review";
+  topic: LearningTopic;
+}
+
+export interface LearningDashboardSummary {
+  preference: LearningPreference;
+  suggestion: LearningSuggestion;
+  dueCount: number;
+  nextDueAt?: string;
+  recent: LearningProgress[];
 }

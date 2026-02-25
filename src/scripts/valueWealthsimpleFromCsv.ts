@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ManualHoldingsConnector } from "../connectors/manualHoldingsConnector";
-import { buildManualHoldingsPayloadFromWealthsimpleCsvFiles } from "../services/wealthsimpleTransactionsCsvParser";
+import { buildManualHoldingsPayloadFromWealthsimpleCsv } from "../services/wealthsimpleCsvPortfolioBuilder";
 
 function sum(values: number[]): number {
   return Number(values.reduce((total, value) => total + value, 0).toFixed(2));
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     }))
   );
 
-  const payload = buildManualHoldingsPayloadFromWealthsimpleCsvFiles(files);
+  const payload = buildManualHoldingsPayloadFromWealthsimpleCsv(files);
   const connector = new ManualHoldingsConnector("wealthsimple", "Wealthsimple");
   const syncPayload = await connector.sync(
     {
@@ -66,4 +66,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

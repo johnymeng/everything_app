@@ -3,248 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fitness Tracking</title>
-    <style>
-      :root {
-        --bg: #edf3ea;
-        --surface: #ffffff;
-        --text: #18231f;
-        --muted: #5b6a63;
-        --border: #cfdad3;
-        --accent: #1b7f55;
-        --warning: #9c5e26;
-        --danger: #b33a3a;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
-        background: linear-gradient(155deg, #ecf5ed 0%, #f7f6f2 50%, #e8f0f6 100%);
-        color: var(--text);
-      }
-
-      .page {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 24px 16px 56px;
-        display: grid;
-        gap: 16px;
-      }
-
-      .panel,
-      .card {
-        border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 14px;
-      }
-
-      .panel {
-        padding: 16px;
-      }
-
-      .stack {
-        display: grid;
-        gap: 12px;
-      }
-
-      .row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .split {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-      }
-
-      .grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      }
-
-      h1,
-      h2,
-      h3,
-      p {
-        margin: 0;
-      }
-
-      .subtitle {
-        color: var(--muted);
-      }
-
-      button,
-      input,
-      select,
-      textarea {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 0.95rem;
-        font-family: inherit;
-        background: white;
-        color: inherit;
-      }
-
-      textarea {
-        min-height: 120px;
-        width: 100%;
-        resize: vertical;
-      }
-
-      button {
-        cursor: pointer;
-      }
-
-      button.primary {
-        background: var(--accent);
-        color: white;
-        border-color: var(--accent);
-      }
-
-      button.warning {
-        background: #fff2e7;
-        border-color: #f1d3b7;
-        color: #6d3d11;
-      }
-
-      a.link {
-        text-decoration: none;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 12px;
-        color: var(--text);
-        background: white;
-      }
-
-      .badge {
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        padding: 4px 10px;
-        font-size: 0.82rem;
-        color: var(--muted);
-      }
-
-      .metric-label {
-        font-size: 0.9rem;
-        color: var(--muted);
-      }
-
-      .metric-value {
-        font-size: 1.35rem;
-        font-weight: 700;
-      }
-
-      .status {
-        margin: 0;
-        color: var(--muted);
-      }
-
-      .status.error {
-        color: var(--danger);
-      }
-
-      .status.warn {
-        color: var(--warning);
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      .table-wrap {
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th,
-      td {
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-        padding: 9px 6px;
-        white-space: nowrap;
-      }
-
-      th {
-        color: var(--muted);
-        font-weight: 600;
-      }
-
-      .pill {
-        border-radius: 999px;
-        padding: 3px 9px;
-        font-size: 0.8rem;
-      }
-
-      .pill.hit {
-        background: #e4f6ed;
-        color: #125337;
-      }
-
-      .pill.on_track {
-        background: #edf5ff;
-        color: #154a81;
-      }
-
-      .pill.off_track {
-        background: #fff0f0;
-        color: #8d2626;
-      }
-
-      .pill.no_data {
-        background: #f3f3f3;
-        color: #666;
-      }
-
-      .suggestion {
-        padding: 12px;
-      }
-
-      .suggestion p {
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-
-      @media (max-width: 760px) {
-        .split {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        input,
-        select,
-        button {
-          width: 100%;
-        }
-      }
-    </style>
+    <title>Health • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
   </head>
   <body>
-    <main class="page">
-      <header class="panel stack">
-        <div class="split">
-          <div>
-            <h1>Fitness Tracking</h1>
-            <p class="subtitle">Sync Apple Health metrics, monitor training trends, and manage performance targets.</p>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link active" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link" href="/photos.html">Photos</a>
+          <a class="nav-link" href="/learning.html">Learning</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input type="search" placeholder="Search" aria-label="Search" />
           </div>
-          <div class="row">
-            <a class="link" href="/">Finance Page</a>
-          </div>
+          <a class="icon-button" href="/">Dashboard</a>
         </div>
-      </header>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Health</div>
+          <h1 class="hero-title">Training trends at a glance.</h1>
+          <p class="hero-copy">Sync Apple Health metrics, monitor trends, and manage performance targets.</p>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
 
       <section id="authGate" class="panel stack hidden">
         <h2>Sign in required</h2>
@@ -267,9 +61,9 @@
         </section>
 
         <section class="panel stack">
-          <h3>Apple Health Payload (optional)</h3>
-          <p class="subtitle">Paste JSON from your Apple Health shortcut/export. Leave empty to load mock health data.</p>
-          <textarea id="payloadInput" placeholder='{"samples":[{"metric":"vo2_max","value":44.2,"unit":"ml/kg/min","recordedAt":"2026-02-18T07:00:00.000Z"}]}'></textarea>
+          <h3>Apple Health Payload</h3>
+          <p class="subtitle">Paste JSON from your Apple Health shortcut/export, then click Sync Apple Health.</p>
+          <textarea id="payloadInput" placeholder='{"samples":[]}'></textarea>
         </section>
 
         <section class="grid" id="latestGrid"></section>

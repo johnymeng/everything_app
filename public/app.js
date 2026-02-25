@@ -1,7 +1,11 @@
+import "./search.js";
+
 const state = {
   token: localStorage.getItem("finance_tracker_token") || "",
   user: null,
-  providers: []
+  providers: [],
+  portfolioRange: localStorage.getItem("finance_tracker_portfolio_range") || "1m",
+  portfolioHistory: null
 };
 
 const labels = {
@@ -29,6 +33,21 @@ const liabilitiesBody = document.getElementById("liabilitiesBody");
 const userLabel = document.getElementById("userLabel");
 const modeHint = document.getElementById("modeHint");
 const statusText = document.getElementById("statusText");
+const portfolioGrowthValue = document.getElementById("portfolioGrowthValue");
+const portfolioGrowthDelta = document.getElementById("portfolioGrowthDelta");
+const portfolioGrowthSubtitle = document.getElementById("portfolioGrowthSubtitle");
+const portfolioRefreshButton = document.getElementById("portfolioRefreshButton");
+const portfolioRangeButtons = document.getElementById("portfolioRangeButtons");
+const portfolioChart = document.getElementById("portfolioChart");
+const portfolioGrowthMeta = document.getElementById("portfolioGrowthMeta");
+const snapshotFromInput = document.getElementById("snapshotFromInput");
+const snapshotToInput = document.getElementById("snapshotToInput");
+const snapshotLimitInput = document.getElementById("snapshotLimitInput");
+const snapshotSearchButton = document.getElementById("snapshotSearchButton");
+const snapshotClearButton = document.getElementById("snapshotClearButton");
+const snapshotsBody = document.getElementById("snapshotsBody");
+const snapshotDetail = document.getElementById("snapshotDetail");
+const snapshotDetailPre = document.getElementById("snapshotDetailPre");
 const csvInstitutionInput = document.getElementById("csvInstitutionInput");
 const csvAccountNameInput = document.getElementById("csvAccountNameInput");
 const csvAccountTypeInput = document.getElementById("csvAccountTypeInput");
@@ -36,6 +55,8 @@ const csvCurrencyInput = document.getElementById("csvCurrencyInput");
 const csvDayFirstInput = document.getElementById("csvDayFirstInput");
 const csvFileInput = document.getElementById("csvFileInput");
 const csvImportButton = document.getElementById("csvImportButton");
+const csvImportDetails = document.getElementById("csvImportDetails");
+const resetDataButton = document.getElementById("resetDataButton");
 
 function setStatus(message, isError = false) {
   statusText.textContent = message;
@@ -62,12 +83,45 @@ async function api(path, options = {}, requireAuth = true) {
     headers
   });
 
+  const contentType = response.headers.get("content-type") || "";
+  const bodyText = await response.text().catch(() => "");
+  const trimmed = bodyText.trim();
+
+  const parseBody = () => {
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(bodyText);
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const payload = parseBody();
+
   if (!response.ok) {
-    const payload = await response.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(payload.error || "Request failed");
+    const errorMessage =
+      payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? payload.error
+        : contentType.includes("text/html") || trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")
+          ? "API returned HTML instead of JSON. Make sure you are running the Express server and opening the app from it (default: http://localhost:4000)."
+          : `Request failed (${response.status}).`;
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  if (payload !== null) {
+    return payload;
+  }
+
+  if (contentType.includes("text/html") || trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")) {
+    throw new Error(
+      "API returned HTML instead of JSON. Make sure you are running the Express server and opening the app from it (default: http://localhost:4000)."
+    );
+  }
+
+  return null;
 }
 
 function setToken(token) {
@@ -79,6 +133,7 @@ function clearSession() {
   state.token = "";
   state.user = null;
   state.providers = [];
+  state.portfolioHistory = null;
   localStorage.removeItem("finance_tracker_token");
   authPanel.classList.remove("hidden");
   appPanel.classList.add("hidden");
@@ -86,14 +141,97 @@ function clearSession() {
   accountsBody.innerHTML = "";
   holdingsBody.innerHTML = "";
   liabilitiesBody.innerHTML = "";
+  snapshotsBody.innerHTML = "";
+  snapshotDetailPre.textContent = "";
+  snapshotDetail.open = false;
+  if (portfolioGrowthValue) {
+    portfolioGrowthValue.textContent = "—";
+  }
+  if (portfolioGrowthDelta) {
+    portfolioGrowthDelta.textContent = "—";
+    portfolioGrowthDelta.classList.remove("positive", "negative");
+  }
 }
 
 function currency(amount, code = "CAD") {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: code,
-    maximumFractionDigits: 2
-  }).format(Number(amount || 0));
+  const numeric = Number(amount || 0);
+  const candidate = typeof code === "string" ? code.trim().toUpperCase() : "CAD";
+  const safe = /^[A-Z]{3}$/.test(candidate) ? candidate : "CAD";
+
+  try {
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: safe,
+      maximumFractionDigits: 2
+    }).format(numeric);
+  } catch (_error) {
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+      maximumFractionDigits: 2
+    }).format(numeric);
+  }
+}
+
+function formatPrice(amount, code = "CAD") {
+  const numeric = Number(amount || 0);
+  const candidate = typeof code === "string" ? code.trim().toUpperCase() : "CAD";
+  const safe = /^[A-Z]{3}$/.test(candidate) ? candidate : "CAD";
+  const abs = Math.abs(numeric);
+  const digits = abs > 0 && abs < 1 ? 6 : 2;
+
+  try {
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: safe,
+      maximumFractionDigits: digits
+    }).format(numeric);
+  } catch (_error) {
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+      maximumFractionDigits: digits
+    }).format(numeric);
+  }
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${value.toFixed(2)}%`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function shortenHoldingName(name) {
+  const raw = String(name ?? "").trim();
+  if (!raw) {
+    return raw;
+  }
+
+  let normalized = raw.replace(/\s+/g, " ");
+  normalized = normalized.replace(/\s*\(cad hedged\)\s*$/i, "");
+  normalized = normalized.replace(/\s*-\s*cad\s*$/i, "");
+
+  if (normalized.includes(" - ") && normalized.length > 44) {
+    normalized = normalized.split(" - ")[0] || normalized;
+  }
+
+  normalized = normalized.trim();
+  if (normalized.length <= 44) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 41).trimEnd()}…`;
 }
 
 function renderSummary(summary) {
@@ -126,8 +264,8 @@ function renderAccounts(accounts) {
     row.innerHTML = `
       <td>${labels[account.provider] || account.provider}</td>
       <td>${account.name}</td>
-      <td>${account.type}</td>
       <td>${currency(account.balance, account.currency)}</td>
+      <td>${account.type}</td>
       <td>${new Date(account.lastSyncedAt).toLocaleString()}</td>
     `;
     accountsBody.appendChild(row);
@@ -138,13 +276,27 @@ function renderHoldings(holdings) {
   holdingsBody.innerHTML = "";
 
   for (const holding of holdings) {
+    const costBasis =
+      holding.costBasis === null || holding.costBasis === undefined ? null : Number(holding.costBasis);
+    const quantity = Number(holding.quantity ?? 0);
+    const hasBasis = costBasis !== null && Number.isFinite(costBasis) && costBasis > 0 && Number.isFinite(quantity) && quantity !== 0;
+    const avgCost = hasBasis ? costBasis / quantity : null;
+    const profit = hasBasis ? Number(holding.value ?? 0) - costBasis : null;
+    const gainPct = hasBasis ? (profit / costBasis) * 100 : null;
+    const profitClass = profit === null ? "" : profit > 0 ? "positive" : profit < 0 ? "negative" : "";
+
+    const displayName = shortenHoldingName(holding.name);
+    const title = escapeHtml(holding.name);
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${holding.symbol}</td>
-      <td>${holding.name}</td>
+      <td title="${title}">${escapeHtml(displayName)}</td>
       <td>${holding.quantity}</td>
-      <td>${currency(holding.unitPrice, holding.currency)}</td>
+      <td>${avgCost === null ? "—" : formatPrice(avgCost, holding.currency)}</td>
+      <td>${formatPrice(holding.unitPrice, holding.currency)}</td>
       <td>${currency(holding.value, holding.currency)}</td>
+      <td class="pl ${profitClass}">${profit === null ? "—" : currency(profit, holding.currency)}</td>
+      <td class="pl ${profitClass}">${gainPct === null ? "—" : formatPercent(gainPct)}</td>
     `;
     holdingsBody.appendChild(row);
   }
@@ -158,11 +310,301 @@ function renderLiabilities(liabilities) {
     row.innerHTML = `
       <td>${labels[liability.provider] || liability.provider}</td>
       <td>${liability.name}</td>
-      <td>${liability.kind}</td>
       <td>${currency(liability.balance, liability.currency)}</td>
+      <td>${liability.kind}</td>
       <td>${liability.interestRate ?? "-"}</td>
     `;
     liabilitiesBody.appendChild(row);
+  }
+}
+
+function formatDelta(delta, code) {
+  const prefix = delta > 0 ? "+" : "";
+  return `${prefix}${currency(delta, code)}`;
+}
+
+function resizeCanvasToDisplaySize(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    return true;
+  }
+
+  return false;
+}
+
+function drawPortfolioChart(canvas, points, code) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+
+  resizeCanvasToDisplaySize(canvas);
+
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const style = getComputedStyle(document.documentElement);
+  const border = style.getPropertyValue("--border").trim() || "#e6e8eb";
+  const muted = style.getPropertyValue("--muted").trim() || "#5d6672";
+  const accent = style.getPropertyValue("--accent").trim() || "#00a86b";
+
+  if (!points || points.length === 0) {
+    ctx.fillStyle = muted;
+    ctx.font = `${Math.round(13 * (window.devicePixelRatio || 1))}px system-ui, -apple-system, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("No snapshot data yet.", width / 2, height / 2);
+    return;
+  }
+
+  const times = points.map((point) => Date.parse(point.capturedAt));
+  const values = points.map((point) => Number(point.value || 0));
+
+  const minTime = Math.min(...times);
+  const maxTime = Math.max(...times);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  const paddingLeft = Math.round(48 * (window.devicePixelRatio || 1));
+  const paddingRight = Math.round(16 * (window.devicePixelRatio || 1));
+  const paddingTop = Math.round(18 * (window.devicePixelRatio || 1));
+  const paddingBottom = Math.round(24 * (window.devicePixelRatio || 1));
+
+  const plotWidth = Math.max(1, width - paddingLeft - paddingRight);
+  const plotHeight = Math.max(1, height - paddingTop - paddingBottom);
+
+  const valueRange = maxValue - minValue || Math.max(1, Math.abs(maxValue) * 0.05);
+  const yMin = minValue - valueRange * 0.08;
+  const yMax = maxValue + valueRange * 0.12;
+
+  const xForTime = (time) => {
+    if (maxTime === minTime) {
+      return paddingLeft;
+    }
+    return paddingLeft + ((time - minTime) / (maxTime - minTime)) * plotWidth;
+  };
+
+  const yForValue = (value) => paddingTop + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
+
+  ctx.strokeStyle = border;
+  ctx.lineWidth = Math.max(1, Math.round(1 * (window.devicePixelRatio || 1)));
+
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i += 1) {
+    const y = paddingTop + (i / gridLines) * plotHeight;
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y);
+    ctx.lineTo(width - paddingRight, y);
+    ctx.stroke();
+  }
+
+  const labelFontSize = Math.round(11 * (window.devicePixelRatio || 1));
+  ctx.font = `${labelFontSize}px system-ui, -apple-system, sans-serif`;
+  ctx.fillStyle = muted;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  const labelValues = [yMax, (yMax + yMin) / 2, yMin];
+  for (const value of labelValues) {
+    const y = yForValue(value);
+    const label = currency(value, code);
+    ctx.fillText(label, paddingLeft - Math.round(10 * (window.devicePixelRatio || 1)), y);
+  }
+
+  ctx.lineWidth = Math.max(2, Math.round(2 * (window.devicePixelRatio || 1)));
+  ctx.strokeStyle = accent;
+  ctx.beginPath();
+
+  points.forEach((point, index) => {
+    const x = xForTime(Date.parse(point.capturedAt));
+    const y = yForValue(point.value);
+    if (index === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.14;
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    const x = xForTime(Date.parse(point.capturedAt));
+    const y = yForValue(point.value);
+    if (index === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.lineTo(xForTime(maxTime), paddingTop + plotHeight);
+  ctx.lineTo(xForTime(minTime), paddingTop + plotHeight);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function setRangeButtonActive(range) {
+  const buttons = portfolioRangeButtons?.querySelectorAll("button[data-range]") || [];
+  for (const button of buttons) {
+    button.classList.toggle("active", button.dataset.range === range);
+  }
+}
+
+async function refreshPortfolioGrowth(options = {}) {
+  if (!state.token || !portfolioChart) {
+    return;
+  }
+
+  const range = options.range || state.portfolioRange || "1m";
+
+  try {
+    portfolioGrowthMeta.textContent = "Loading portfolio history...";
+    portfolioGrowthMeta.classList.remove("warn");
+    if (portfolioGrowthValue) {
+      portfolioGrowthValue.textContent = "—";
+    }
+    if (portfolioGrowthDelta) {
+      portfolioGrowthDelta.textContent = "—";
+      portfolioGrowthDelta.classList.remove("positive", "negative");
+    }
+    setRangeButtonActive(range);
+
+    const history = await api(`/portfolio/history?metric=investments&range=${encodeURIComponent(range)}&maxPoints=500`);
+    state.portfolioHistory = history;
+
+    const code = history.currency || "CAD";
+    const points = history.points || [];
+    drawPortfolioChart(portfolioChart, points, code);
+
+    if (portfolioGrowthSubtitle) {
+      portfolioGrowthSubtitle.textContent = `Investments (${code}) based on snapshots.`;
+    }
+
+    if (points.length === 0) {
+      portfolioGrowthMeta.textContent = "No snapshots yet. Sync or import a CSV to record one.";
+      return;
+    }
+
+    const first = points[0];
+    const last = points[points.length - 1];
+    const delta = Number(last.value) - Number(first.value);
+    const pct = first.value ? (delta / Number(first.value)) * 100 : 0;
+    const pctLabel = Number.isFinite(pct) ? `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%` : "0.00%";
+
+    if (portfolioGrowthValue) {
+      portfolioGrowthValue.textContent = currency(last.value, code);
+    }
+
+    if (portfolioGrowthDelta) {
+      portfolioGrowthDelta.textContent = `${formatDelta(delta, code)} (${pctLabel})`;
+      portfolioGrowthDelta.classList.toggle("positive", delta > 0);
+      portfolioGrowthDelta.classList.toggle("negative", delta < 0);
+    }
+
+    const capturedAt = last.capturedAt ? new Date(last.capturedAt) : null;
+    const capturedLabel = capturedAt && !Number.isNaN(capturedAt.getTime()) ? capturedAt.toLocaleString() : "unknown";
+    const pointLabel = points.length === 1 ? "1 snapshot" : `${points.length} snapshots`;
+    portfolioGrowthMeta.textContent = `As of ${capturedLabel} • ${pointLabel}`;
+  } catch (error) {
+    portfolioGrowthMeta.textContent = error.message || "Failed to load portfolio history.";
+    portfolioGrowthMeta.classList.add("warn");
+  }
+}
+
+function toIsoFromDatetimeLocal(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return date.toISOString();
+}
+
+async function searchPortfolioSnapshots() {
+  if (!state.token) {
+    return;
+  }
+
+  const from = toIsoFromDatetimeLocal(snapshotFromInput.value);
+  const to = toIsoFromDatetimeLocal(snapshotToInput.value);
+  const limit = Number.parseInt(snapshotLimitInput.value, 10);
+  const params = new URLSearchParams();
+  if (from) {
+    params.set("from", from);
+  }
+  if (to) {
+    params.set("to", to);
+  }
+  if (Number.isFinite(limit) && limit > 0) {
+    params.set("limit", String(Math.min(limit, 1000)));
+  }
+
+  try {
+    setStatus("Loading snapshots...");
+    const snapshots = await api(`/portfolio/snapshots?${params.toString()}`);
+    renderSnapshots(snapshots);
+    setStatus(`Loaded ${snapshots.length} snapshot(s).`);
+  } catch (error) {
+    setStatus(error.message || "Failed to load snapshots.", true);
+  }
+}
+
+function renderSnapshots(snapshots) {
+  snapshotsBody.innerHTML = "";
+  snapshotDetailPre.textContent = "";
+  snapshotDetail.open = false;
+
+  if (!snapshots || snapshots.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="6" class="metric-label">No snapshots found for that range.</td>`;
+    snapshotsBody.appendChild(row);
+    return;
+  }
+
+  for (const snapshot of snapshots) {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(snapshot.capturedAt).toLocaleString()}</td>
+      <td>${currency(snapshot.investments, snapshot.currency)}</td>
+      <td>${currency(snapshot.totalAssets, snapshot.currency)}</td>
+      <td>${currency(snapshot.netWorth, snapshot.currency)}</td>
+      <td>${snapshot.currency}</td>
+      <td><button type="button" data-snapshot-id="${snapshot.id}">View</button></td>
+    `;
+    snapshotsBody.appendChild(row);
+  }
+
+  for (const button of snapshotsBody.querySelectorAll("button[data-snapshot-id]")) {
+    button.addEventListener("click", async () => {
+      const snapshotId = button.dataset.snapshotId;
+      if (!snapshotId) {
+        return;
+      }
+
+      try {
+        setStatus("Loading snapshot details...");
+        const detail = await api(`/portfolio/snapshots/${snapshotId}`);
+        snapshotDetailPre.textContent = JSON.stringify(detail, null, 2);
+        snapshotDetail.open = true;
+        setStatus("Snapshot loaded.");
+      } catch (error) {
+        setStatus(error.message || "Failed to load snapshot.", true);
+      }
+    });
   }
 }
 
@@ -251,6 +693,10 @@ async function connectProvider(provider) {
   const providerName = provider.displayName || labels[provider.provider] || provider.provider;
 
   try {
+    if (provider.status && provider.status !== "available") {
+      throw new Error(`${providerName} is not enabled (mode=${provider.mode}).`);
+    }
+
     setStatus(`Generating link token for ${providerName} (${provider.mode})...`);
     const link = await api(`/providers/${provider.provider}/link-token`, {
       method: "POST"
@@ -258,35 +704,11 @@ async function connectProvider(provider) {
 
     let publicToken = "";
 
-    if (provider.mode === "mock") {
-      publicToken = `mock-public-token:${provider.provider}:${Date.now()}`;
-    } else if (provider.mode === "eq_mobile_api") {
+    if (provider.mode === "eq_mobile_api") {
       publicToken = buildEqMobileAuthToken();
     } else if (provider.mode === "manual_holdings") {
-      const example = JSON.stringify(
-        {
-          accounts: [
-            {
-              name: "TFSA",
-              cash: 123.45,
-              holdings: [
-                { symbol: "XEQT", quantity: 10 },
-                { symbol: "VCN", quantity: 5 }
-              ]
-            },
-            {
-              name: "RRSP",
-              cash: 0,
-              holdings: [{ symbol: "VFV", quantity: 20 }]
-            }
-          ]
-        },
-        null,
-        2
-      );
-
       const json = promptRequired(
-        `Paste Wealthsimple holdings JSON (CAD). Example:\n\n${example}\n\nTip: if a ticker needs an explicit quote symbol, add { \"quoteSymbol\": \"XEQT.TO\" }.`,
+        'Paste Wealthsimple holdings JSON (CAD).\n\nTip: include `costBasis` (total) to enable P/L, and optionally `quoteSymbol` (ex: "XEQT.TO") for pricing.',
         "Holdings JSON"
       );
 
@@ -348,12 +770,81 @@ async function importCsvStatement() {
 
     await refreshData();
 
-    setStatus(
-      `CSV imported: ${result.imported.transactions} transactions across ${result.imported.accounts} account(s).`
-    );
+    const importedParts = [];
+
+    if (Number(result.imported.holdings || 0) > 0) {
+      importedParts.push(`${result.imported.holdings} holdings`);
+    }
+
+    if (Number(result.imported.transactions || 0) > 0) {
+      importedParts.push(`${result.imported.transactions} transactions`);
+    }
+
+    const importedLabel = importedParts.length > 0 ? importedParts.join(" and ") : `${result.imported.rowsImported} row(s)`;
+
+    const diagnostics =
+      result?.detectedColumns?.format === "wealthsimple_holdings_report" && Number(result?.detectedColumns?.holdingsTotal || 0) > 0
+        ? ` Cost basis parsed for ${Number(result.detectedColumns.holdingsWithCostBasis || 0)}/${Number(result.detectedColumns.holdingsTotal || 0)} holding(s).`
+        : "";
+
+    setStatus(`CSV imported: ${importedLabel} across ${result.imported.accounts} account(s).${diagnostics}`);
     csvFileInput.value = "";
+    if (csvImportDetails instanceof HTMLDetailsElement) {
+      csvImportDetails.open = false;
+    }
   } catch (error) {
     setStatus(error.message || "CSV import failed.", true);
+  }
+}
+
+async function resetAllData() {
+  if (!state.token) {
+    setStatus("Sign in first.", true);
+    return;
+  }
+
+  const first = confirm(
+    "Reset ALL finance + health data?\n\nThis deletes connections, accounts, holdings, transactions, snapshots, health samples, and targets.\n\nYour user account stays."
+  );
+  if (!first) {
+    return;
+  }
+
+  const second = prompt('Type "RESET" to confirm:');
+  if (String(second || "").trim().toUpperCase() !== "RESET") {
+    setStatus("Reset canceled.", true);
+    return;
+  }
+
+  try {
+    setStatus("Resetting data...");
+    const result = await api("/reset", { method: "POST", body: JSON.stringify({}) });
+    await refreshData();
+    const remaining = result?.deleted?.remaining;
+    const remainingTotal =
+      remaining && typeof remaining === "object"
+        ? Number(remaining.connections || 0) +
+          Number(remaining.accounts || 0) +
+          Number(remaining.holdings || 0) +
+          Number(remaining.liabilities || 0) +
+          Number(remaining.transactions || 0) +
+          Number(remaining.portfolioSnapshots || 0) +
+          Number(remaining.healthConnections || 0) +
+          Number(remaining.fitnessSamples || 0) +
+          Number(remaining.fitnessTargets || 0)
+        : 0;
+
+    if (remainingTotal > 0) {
+      setStatus(
+        `Reset incomplete (remaining rows: ${remainingTotal}). Open /api/debug/user-counts for details.`,
+        true
+      );
+      return;
+    }
+
+    setStatus("All data reset to 0. Import/sync to load your real data.");
+  } catch (error) {
+    setStatus(error.message || "Reset failed.", true);
   }
 }
 
@@ -364,6 +855,7 @@ function renderProviderButtons() {
     const button = document.createElement("button");
     const providerName = provider.displayName || labels[provider.provider] || provider.provider;
     button.textContent = `Connect ${providerName} (${provider.mode})`;
+    button.disabled = provider.status && provider.status !== "available";
     button.addEventListener("click", () => connectProvider(provider));
     providerButtons.appendChild(button);
   }
@@ -380,9 +872,9 @@ function renderProviderButtons() {
       ? "Plaid Link is enabled for one or more providers."
       : anySnaptrade
         ? "SnapTrade mode is enabled for Wealthsimple. Follow the browser-based connection flow."
-        : "All providers are in mock mode. Update env to switch providers to plaid/eq_mobile_api/snaptrade mode.";
+        : "Some providers may be disabled. Update env to enable eq_mobile_api/plaid/snaptrade/manual_holdings as needed.";
 
-  modeHint.textContent = `${connectorHint} CSV statement import is always available below.`;
+  modeHint.textContent = `${connectorHint} CSV statement import is available in the Import CSV panel.`;
 }
 
 async function refreshData() {
@@ -397,6 +889,8 @@ async function refreshData() {
   renderAccounts(accounts);
   renderHoldings(holdings);
   renderLiabilities(liabilities);
+
+  await refreshPortfolioGrowth();
 }
 
 async function initializeAuthenticatedView() {
@@ -494,5 +988,54 @@ syncAllButton.addEventListener("click", async () => {
 });
 
 csvImportButton.addEventListener("click", importCsvStatement);
+resetDataButton?.addEventListener("click", resetAllData);
+
+if (portfolioRangeButtons) {
+  portfolioRangeButtons.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const button = target.closest("button[data-range]");
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const range = button.dataset.range;
+    if (!range) {
+      return;
+    }
+
+    state.portfolioRange = range;
+    localStorage.setItem("finance_tracker_portfolio_range", range);
+    await refreshPortfolioGrowth({ range });
+  });
+}
+
+if (portfolioRefreshButton) {
+  portfolioRefreshButton.addEventListener("click", () => refreshPortfolioGrowth());
+}
+
+if (snapshotSearchButton) {
+  snapshotSearchButton.addEventListener("click", searchPortfolioSnapshots);
+}
+
+if (snapshotClearButton) {
+  snapshotClearButton.addEventListener("click", () => {
+    snapshotFromInput.value = "";
+    snapshotToInput.value = "";
+    snapshotLimitInput.value = "250";
+    snapshotsBody.innerHTML = "";
+    snapshotDetailPre.textContent = "";
+    snapshotDetail.open = false;
+  });
+}
+
+window.addEventListener("resize", () => {
+  if (state.portfolioHistory?.points?.length) {
+    drawPortfolioChart(portfolioChart, state.portfolioHistory.points, state.portfolioHistory.currency || "CAD");
+  }
+});
 
 restoreSession();

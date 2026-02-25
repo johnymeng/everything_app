@@ -45,14 +45,14 @@ export const config = {
     key: process.env.APP_ENCRYPTION_KEY ?? "dev-encryption-key-change-me"
   },
   integrations: {
-    eqBankMode: process.env.EQ_BANK_MODE ?? "mock",
-    wealthsimpleMode: process.env.WEALTHSIMPLE_MODE ?? "mock",
-    tdMode: process.env.TD_MODE ?? "mock",
-    amexMode: process.env.AMEX_MODE ?? "mock"
+    eqBankMode: process.env.EQ_BANK_MODE ?? "disabled",
+    wealthsimpleMode: process.env.WEALTHSIMPLE_MODE ?? "disabled",
+    tdMode: process.env.TD_MODE ?? "disabled",
+    amexMode: process.env.AMEX_MODE ?? "disabled"
   },
   quotes: {
     // Free, keyless quote providers are inherently less reliable than paid APIs.
-    provider: process.env.QUOTE_PROVIDER ?? "stooq",
+    provider: process.env.QUOTE_PROVIDER ?? "yahoo",
     defaultSuffix: process.env.QUOTE_DEFAULT_SUFFIX ?? ".TO",
     cdrSuffix: process.env.QUOTE_CDR_SUFFIX ?? ".NE",
     timeoutMs: Number.parseInt(process.env.QUOTE_TIMEOUT_MS ?? "8000", 10),

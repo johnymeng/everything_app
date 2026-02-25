@@ -3,304 +3,212 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Finance Tracker</title>
-    <style>
-      :root {
-        --bg: #f4f2ee;
-        --surface: #fffefb;
-        --text: #1f1d1a;
-        --muted: #6f6a61;
-        --border: #ddd5ca;
-        --accent: #005f4a;
-        --danger: #b33a3a;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
-        background: radial-gradient(circle at 20% 10%, #f8efe3 0%, #f4f2ee 40%, #ebeef2 100%);
-        color: var(--text);
-      }
-
-      .page {
-        max-width: 1150px;
-        margin: 0 auto;
-        padding: 24px 16px 56px;
-      }
-
-      h1,
-      h2,
-      h3 {
-        margin: 0;
-      }
-
-      .subtitle {
-        color: var(--muted);
-        margin: 6px 0 0;
-      }
-
-      .stack {
-        display: grid;
-        gap: 16px;
-      }
-
-      .grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      }
-
-      .card {
-        border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 14px;
-        padding: 14px;
-      }
-
-      .panel {
-        border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 14px;
-        padding: 16px;
-      }
-
-      .row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
-
-      input,
-      select,
-      button {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 0.95rem;
-      }
-
-      input,
-      select {
-        background: white;
-        min-width: 220px;
-      }
-
-      button {
-        background: white;
-        cursor: pointer;
-      }
-
-      .link-button {
-        display: inline-flex;
-        align-items: center;
-        text-decoration: none;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 0.95rem;
-        color: var(--text);
-        background: white;
-      }
-
-      button.primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: white;
-      }
-
-      .metric-title {
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-
-      .metric-value {
-        font-size: 1.35rem;
-        font-weight: 700;
-      }
-
-      .metric-value.debt {
-        color: var(--danger);
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th,
-      td {
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-        padding: 9px 6px;
-        white-space: nowrap;
-      }
-
-      th {
-        color: var(--muted);
-        font-weight: 600;
-      }
-
-      .table-wrap {
-        overflow-x: auto;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      .status {
-        color: var(--muted);
-        margin: 0;
-      }
-
-      .status.error {
-        color: var(--danger);
-      }
-
-      @media (max-width: 700px) {
-        input,
-        select {
-          min-width: 100%;
-        }
-      }
-    </style>
+    <title>Dashboard • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
   </head>
   <body>
-    <main class="page stack">
-      <header>
-        <h1>Personal Finance Tracker</h1>
-        <p class="subtitle">Track EQ Bank, Wealthsimple, TD, and Amex with live connector modes (EQ mobile API, Plaid, SnapTrade) or local mock mode.</p>
-        <p class="subtitle"><a href="/fitness.html">Open fitness tracking page</a></p>
-      </header>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link active" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link" href="/photos.html">Photos</a>
+          <a class="nav-link" href="/learning.html">Learning</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input type="search" placeholder="Search" aria-label="Search" />
+          </div>
+          <a class="icon-button" href="/finance.html">Details</a>
+        </div>
+      </div>
+    </header>
 
-      <section id="authPanel" class="panel stack">
-        <h2>Sign in</h2>
-        <div class="row">
-          <input id="emailInput" type="email" placeholder="Email" />
-          <input id="passwordInput" type="password" placeholder="Password (12+ chars)" />
-          <input id="nameInput" type="text" placeholder="Name (register only)" />
-        </div>
-        <div class="row">
-          <button class="primary" id="registerButton">Register</button>
-          <button id="loginButton">Login</button>
-        </div>
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Everything</div>
+          <h1 class="hero-title">Your money + health, in one view.</h1>
+          <p class="hero-copy">
+            Central dashboard for net worth / portfolio performance, plus a health sidebar. Use the menu to jump into detailed
+            pages.
+          </p>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section id="authPanel" class="auth-layout">
+        <section class="panel auth-hero">
+          <div class="metric-title">Sign in</div>
+          <h2>Welcome back</h2>
+          <p class="subtitle">Use your account to sync providers, import statements, and store your health samples.</p>
+          <div class="row" style="margin-top: 12px">
+            <span class="badge">Local UI + your server</span>
+            <span class="badge">JWT session</span>
+          </div>
+        </section>
+        <section class="panel auth-card stack" aria-label="Authentication">
+          <div>
+            <h2>Sign in</h2>
+            <p class="subtitle">Register once, then log in from any device on your network.</p>
+          </div>
+          <div class="row">
+            <input id="emailInput" type="email" placeholder="Email" autocomplete="email" />
+            <input id="passwordInput" type="password" placeholder="Password (12+ chars)" autocomplete="current-password" />
+          </div>
+          <div class="row">
+            <input id="nameInput" type="text" placeholder="Name (register only)" autocomplete="name" />
+          </div>
+          <div class="row">
+            <button class="primary" id="loginButton">Log in</button>
+            <button id="registerButton">Register</button>
+          </div>
+        </section>
       </section>
 
       <section id="appPanel" class="stack hidden">
-        <div class="panel row" style="justify-content: space-between">
+        <div class="panel toolbar">
           <div>
             <h2 id="userLabel">Authenticated</h2>
-            <p class="subtitle" id="modeHint">Connect providers and sync accounts.</p>
+            <p class="subtitle" id="modeHint">Dashboard pulls finance + health summaries.</p>
           </div>
           <div class="row">
-            <button class="primary" id="syncAllButton">Sync All</button>
-            <a class="link-button" href="/fitness.html">Fitness Page</a>
+            <a class="link" href="/finance.html">Finance details</a>
+            <a class="link" href="/fitness.html">Health details</a>
+            <button class="danger" id="dashboardResetButton" type="button">Reset all data</button>
             <button id="logoutButton">Logout</button>
           </div>
         </div>
 
-        <section class="panel stack">
-          <h3>Import Statement CSV</h3>
-          <p class="subtitle">Upload statement exports to update accounts and transactions without bank APIs.</p>
-          <div class="row">
-            <input id="csvInstitutionInput" type="text" placeholder="Institution (optional, e.g. EQ Bank)" />
-            <input id="csvAccountNameInput" type="text" placeholder="Fallback account name (optional)" />
-          </div>
-          <div class="row">
-            <select id="csvAccountTypeInput">
-              <option value="cash">cash</option>
-              <option value="chequing" selected>chequing</option>
-              <option value="savings">savings</option>
-              <option value="investment">investment</option>
-              <option value="credit_card">credit_card</option>
-              <option value="loan">loan</option>
-              <option value="line_of_credit">line_of_credit</option>
-              <option value="mortgage">mortgage</option>
-              <option value="other">other</option>
-            </select>
-            <input id="csvCurrencyInput" type="text" value="CAD" maxlength="3" placeholder="Currency (CAD)" />
-            <label class="subtitle" style="display: inline-flex; align-items: center; gap: 8px; margin: 0">
-              <input id="csvDayFirstInput" type="checkbox" style="min-width: 16px; width: 16px; height: 16px; margin: 0" />
-              Parse dates as DD/MM/YYYY
-            </label>
-          </div>
-          <div class="row">
-            <input id="csvFileInput" type="file" accept=".csv,text/csv" />
-            <button id="csvImportButton">Import CSV</button>
-          </div>
-        </section>
+        <section class="layout dashboard-layout">
+          <div class="stack">
+            <section class="panel stack" id="wealthPanel">
+              <div class="chart-head">
+                <div>
+                  <div class="metric-title" id="wealthMetricLabel">Net worth</div>
+                  <div class="chart-value" id="wealthValue">—</div>
+                  <div class="chart-delta" id="wealthDelta">—</div>
+                  <p class="subtitle" id="wealthSubtitle">Value over time (dollars) + return (percent) from snapshots.</p>
+                </div>
+                <div class="chart-controls">
+                  <div class="segmented" id="wealthMetricButtons" role="tablist" aria-label="Metric">
+                    <button class="segmented-button active" type="button" data-metric="netWorth">Net Worth</button>
+                    <button class="segmented-button" type="button" data-metric="investments">Portfolio</button>
+                    <button class="segmented-button" type="button" data-metric="totalAssets">Assets</button>
+                  </div>
+                  <div class="segmented" id="wealthRangeButtons" role="tablist" aria-label="Range">
+                    <button class="segmented-button" type="button" data-range="1m">1M</button>
+                    <button class="segmented-button" type="button" data-range="3m">3M</button>
+                    <button class="segmented-button" type="button" data-range="6m">6M</button>
+                    <button class="segmented-button" type="button" data-range="1y">1Y</button>
+                    <button class="segmented-button" type="button" data-range="5y">5Y</button>
+                  </div>
+                  <button id="wealthRefreshButton" type="button">Refresh</button>
+                </div>
+              </div>
 
-        <section class="panel stack">
-          <h3>Connect providers</h3>
-          <div class="row" id="providerButtons"></div>
-        </section>
+              <div class="chart-wrap">
+                <canvas id="wealthChart" height="240"></canvas>
+                <div class="chart-legend" aria-hidden="true">
+                  <span class="chart-legend-item"><span class="chart-swatch value"></span>Value</span>
+                  <span class="chart-legend-item"><span class="chart-swatch returns"></span>Return %</span>
+                </div>
+              </div>
 
-        <section class="grid" id="summaryCards"></section>
+              <p class="status" id="wealthMeta">No snapshots yet. Sync or import on the Finance page to record one.</p>
+            </section>
 
-        <section class="panel">
-          <h3>Accounts</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Provider</th>
-                  <th>Account</th>
-                  <th>Type</th>
-                  <th>Balance</th>
-                  <th>Last Sync</th>
-                </tr>
-              </thead>
-              <tbody id="accountsBody"></tbody>
-            </table>
+            <section class="grid" id="financeSummaryCards" aria-label="Finance summary cards"></section>
+
+            <section class="panel stack">
+              <h3>Quick links</h3>
+              <div class="row">
+                <a class="icon-button" href="/finance.html#accounts">Accounts</a>
+                <a class="icon-button" href="/finance.html#holdings">Holdings</a>
+                <a class="icon-button" href="/finance.html#snapshots">Snapshots</a>
+                <a class="icon-button" href="/fitness.html">Health targets</a>
+                <a class="icon-button" href="/habits.html">Habits</a>
+                <a class="icon-button" href="/photos.html">Photos</a>
+              </div>
+              <p class="subtitle">Use the menu to switch pages for deeper breakdowns.</p>
+            </section>
           </div>
-        </section>
 
-        <section class="panel">
-          <h3>Holdings</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Name</th>
-                  <th>Qty</th>
-                  <th>Unit Price</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody id="holdingsBody"></tbody>
-            </table>
-          </div>
-        </section>
+          <aside class="stack">
+            <section class="panel stack" id="healthPanel">
+              <div class="split">
+                <div>
+                  <div class="metric-title">Health</div>
+                  <h3 id="healthStatusTitle">Not synced yet</h3>
+                  <p class="subtitle" id="healthStatusSubtitle">Sync Apple Health samples from the Health page.</p>
+                </div>
+                <div class="row">
+                  <a class="icon-button" href="/fitness.html">Open</a>
+                </div>
+              </div>
+              <section class="grid dashboard-health-grid" id="healthLatestGrid" aria-label="Latest health metrics"></section>
+              <section class="panel-inner stack">
+                <h3>Insight</h3>
+                <ul id="healthInsights" class="stack"></ul>
+              </section>
+            </section>
 
-        <section class="panel">
-          <h3>Liabilities</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Provider</th>
-                  <th>Name</th>
-                  <th>Kind</th>
-                  <th>Balance</th>
-                  <th>APR %</th>
-                </tr>
-              </thead>
-              <tbody id="liabilitiesBody"></tbody>
-            </table>
-          </div>
+            <section class="panel stack" id="learningPanel">
+              <div class="split">
+                <div>
+                  <div class="metric-title">Learning</div>
+                  <h3 id="learningTitle">Pick a 15-minute topic</h3>
+                  <p class="subtitle" id="learningSubtitle">Set your focus area and start a quick session.</p>
+                </div>
+                <div class="row">
+                  <a class="icon-button" href="/learning.html">Open</a>
+                </div>
+              </div>
+
+              <section class="panel-inner stack">
+                <div class="row">
+                  <label class="subtitle" for="learningInterestSelect" style="min-width: 92px">Focus</label>
+                  <select id="learningInterestSelect" aria-label="Learning focus">
+                    <option value="software">Programming / Software</option>
+                    <option value="hardware">Hardware</option>
+                    <option value="trivia">General trivia</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <span class="badge" id="learningDueBadge">0 due</span>
+                  <a class="link" id="learningStartLink" href="/learning.html">Start</a>
+                </div>
+              </section>
+            </section>
+
+            <section class="panel stack" id="photoPanel">
+              <div class="split">
+                <div>
+                  <div class="metric-title">Photos</div>
+                  <h3 id="photoStatusTitle">Daily photo</h3>
+                  <p class="subtitle" id="photoStatusSubtitle">Take one photo per day to build a collage.</p>
+                </div>
+                <div class="row">
+                  <a class="icon-button" href="/photos.html">Open</a>
+                </div>
+              </div>
+              <div class="row">
+                <span class="badge" id="photoDueBadge">—</span>
+              </div>
+            </section>
+          </aside>
         </section>
       </section>
 
       <p id="statusText" class="status">Ready.</p>
     </main>
 
-    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/dashboard.js"></script>
   </body>
 </html>

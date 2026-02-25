@@ -8,7 +8,7 @@ Production-ready scaffold with:
 - Direct EQ Bank mobile API connector (`mode=eq_mobile_api`, non-Plaid)
 - Live bank connector mode via Plaid (`mode=plaid`)
 - Wealthsimple brokerage connector mode via SnapTrade (`mode=snaptrade`)
-- Mock mode for local demos (`mode=mock`)
+- Wealthsimple manual holdings mode (`mode=manual_holdings`, CSV/JSON input + quotes)
 - Statement CSV import mode (`provider=manual_csv`, no API credentials)
 - Fitness tracking page with Apple Health sync, insights, and performance targets
 
@@ -28,7 +28,7 @@ This build now includes the two hardening steps you asked for:
   - `src/connectors/eqBankMobileConnector.ts` (EQ Bank mobile API)
   - `src/connectors/plaidConnector.ts` (live)
   - `src/connectors/snapTradeConnector.ts` (live Wealthsimple via SnapTrade)
-  - `src/connectors/mockConnector.ts` (sandbox)
+  - `src/connectors/manualHoldingsConnector.ts` (manual Wealthsimple holdings + quotes)
 
 ## Setup
 
@@ -57,7 +57,7 @@ Per provider mode env vars:
 - `AMEX_MODE`
 
 Allowed values:
-- `mock`: uses local sandbox data
+- `disabled`: connector disabled (recommended default until configured)
 - `eq_mobile_api`: EQ Bank-only connector using the mobile API flow
 - `plaid`: uses live Plaid Link + API sync
 - `snaptrade`: Wealthsimple-only live brokerage connection via SnapTrade portal
@@ -88,10 +88,14 @@ If `WEALTHSIMPLE_MODE=manual_holdings`:
   - `QUOTE_MAX_CONCURRENCY` (default: `6`)
 
 Wealthsimple CSV valuation helper:
-- `npm run wealthsimple:value -- /path/to/TFSA-...csv /path/to/FHSA-...csv`
+- Works with either:
+  - `*-monthly-statement-transactions-*.csv` (trade history; requires full history for accurate holdings)
+  - `holdings-report-*.csv` (holdings snapshot; recommended)
+- Example:
+  - `npm run wealthsimple:value -- /path/to/holdings-report-2026-02-19.csv`
 - Set `QUOTE_PROVIDER=yahoo` to price using Yahoo Finance.
 - Generate manual holdings JSON for in-app connect:
-  - `npm run wealthsimple:payload -- /path/to/TFSA-...csv /path/to/FHSA-...csv`
+  - `npm run wealthsimple:payload -- /path/to/holdings-report-2026-02-19.csv`
 
 ## EQ connector notes
 

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finance • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link active" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link" href="/photos.html">Photos</a>
+          <a class="nav-link" href="/learning.html">Learning</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input type="search" placeholder="Search name or symbol" aria-label="Search" />
+          </div>
+          <a class="icon-button" href="#accounts">Jump to tables</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Finance</div>
+          <h1 class="hero-title">Full finance breakdown.</h1>
+          <p class="hero-copy">
+            Track EQ Bank, Wealthsimple, TD, and Amex using connectors (EQ mobile API, Plaid, SnapTrade, manual holdings, or CSV
+            imports).
+          </p>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section id="authPanel" class="auth-layout">
+        <section class="panel auth-hero">
+          <div class="metric-title">Sign in</div>
+          <h2>Welcome back</h2>
+          <p class="subtitle">Use your account to sync providers and import statements securely.</p>
+          <div class="row" style="margin-top: 12px">
+            <span class="badge">No tracking until you sign in</span>
+            <span class="badge">Local UI + your server</span>
+          </div>
+        </section>
+        <section class="panel auth-card stack" aria-label="Authentication">
+          <div>
+            <h2>Sign in</h2>
+            <p class="subtitle">Register once, then log in from any device on your network.</p>
+          </div>
+          <div class="row">
+            <input id="emailInput" type="email" placeholder="Email" autocomplete="email" />
+            <input id="passwordInput" type="password" placeholder="Password (12+ chars)" autocomplete="current-password" />
+          </div>
+          <div class="row">
+            <input id="nameInput" type="text" placeholder="Name (register only)" autocomplete="name" />
+          </div>
+          <div class="row">
+            <button class="primary" id="loginButton">Log in</button>
+            <button id="registerButton">Register</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="appPanel" class="stack hidden">
+        <div class="panel toolbar">
+          <div>
+            <h2 id="userLabel">Authenticated</h2>
+            <p class="subtitle" id="modeHint">Connect providers and sync accounts.</p>
+          </div>
+          <div class="row">
+            <button id="logoutButton">Logout</button>
+          </div>
+        </div>
+
+        <section class="layout">
+          <div class="stack">
+            <section class="panel stack" id="portfolioGrowthPanel">
+              <div class="chart-head">
+                <div>
+                  <div class="metric-title">Portfolio value</div>
+                  <div class="chart-value" id="portfolioGrowthValue">—</div>
+                  <div class="chart-delta" id="portfolioGrowthDelta">—</div>
+                  <p class="subtitle" id="portfolioGrowthSubtitle">Investments value based on latest sync/import snapshots.</p>
+                </div>
+                <div class="chart-controls">
+                  <div class="segmented" id="portfolioRangeButtons" role="tablist" aria-label="Portfolio range">
+                    <button class="segmented-button" type="button" data-range="1d">1D</button>
+                    <button class="segmented-button" type="button" data-range="1m">1M</button>
+                    <button class="segmented-button" type="button" data-range="3m">3M</button>
+                    <button class="segmented-button" type="button" data-range="6m">6M</button>
+                    <button class="segmented-button" type="button" data-range="1y">1Y</button>
+                    <button class="segmented-button" type="button" data-range="5y">5Y</button>
+                  </div>
+                  <button id="portfolioRefreshButton" type="button">Refresh</button>
+                </div>
+              </div>
+
+              <div class="chart-wrap">
+                <canvas id="portfolioChart" height="220"></canvas>
+              </div>
+
+              <p class="status" id="portfolioGrowthMeta">No snapshots yet. Sync or import a CSV to record one.</p>
+            </section>
+
+            <section class="grid" id="summaryCards"></section>
+
+            <section class="panel" id="accounts">
+              <h3>Accounts</h3>
+              <div class="table-wrap">
+                <table class="data-table accounts-table" aria-label="Accounts table">
+                  <colgroup>
+                    <col class="col-provider" />
+                    <col class="col-account" />
+                    <col class="col-balance" />
+                    <col class="col-type" />
+                    <col class="col-last-sync" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Provider</th>
+                      <th>Account</th>
+                      <th>Balance</th>
+                      <th>Type</th>
+                      <th>Last Sync</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accountsBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+	            <section class="panel" id="holdings">
+	              <h3>Holdings</h3>
+	              <div class="table-wrap">
+	                <table class="data-table holdings-table" aria-label="Holdings table">
+	                  <colgroup>
+	                    <col class="col-symbol" />
+	                    <col class="col-name" />
+	                    <col class="col-qty" />
+	                    <col class="col-avg" />
+	                    <col class="col-price" />
+	                    <col class="col-value" />
+	                    <col class="col-pl" />
+	                    <col class="col-gain" />
+	                  </colgroup>
+	                  <thead>
+	                    <tr>
+	                      <th>Symbol</th>
+	                      <th>Name</th>
+	                      <th>Qty</th>
+	                      <th>Avg</th>
+	                      <th>Price</th>
+	                      <th>Value</th>
+	                      <th>P/L</th>
+	                      <th>Gain</th>
+	                    </tr>
+	                  </thead>
+	                  <tbody id="holdingsBody"></tbody>
+	                </table>
+	              </div>
+	            </section>
+
+            <section class="panel">
+              <h3>Liabilities</h3>
+              <div class="table-wrap">
+                <table class="data-table liabilities-table" aria-label="Liabilities table">
+                  <colgroup>
+                    <col class="col-provider" />
+                    <col class="col-name" />
+                    <col class="col-balance" />
+                    <col class="col-kind" />
+                    <col class="col-apr" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Provider</th>
+                      <th>Name</th>
+                      <th>Balance</th>
+                      <th>Kind</th>
+                      <th>APR %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="liabilitiesBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel stack" id="snapshots">
+              <div class="split">
+                <div>
+                  <h3>Portfolio Snapshot Search</h3>
+                  <p class="subtitle">List and inspect historical snapshots (captured after each sync/import).</p>
+                </div>
+                <div class="row">
+                  <button id="snapshotSearchButton" class="primary">Search</button>
+                </div>
+              </div>
+
+              <div class="row">
+                <input id="snapshotFromInput" type="datetime-local" placeholder="From" />
+                <input id="snapshotToInput" type="datetime-local" placeholder="To" />
+                <input id="snapshotLimitInput" type="number" min="1" max="1000" value="250" placeholder="Limit" />
+                <button id="snapshotClearButton" type="button">Clear</button>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Captured</th>
+                      <th>Investments</th>
+                      <th>Total Assets</th>
+                      <th>Net Worth</th>
+                      <th>Currency</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="snapshotsBody"></tbody>
+                </table>
+              </div>
+
+              <details id="snapshotDetail" class="snapshot-detail">
+                <summary>Selected snapshot details</summary>
+                <pre id="snapshotDetailPre" class="snapshot-json"></pre>
+              </details>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="panel stack">
+              <div class="split">
+                <div>
+                  <h3>Quick actions</h3>
+                  <p class="subtitle">Sync and import your latest data.</p>
+                </div>
+              </div>
+              <div class="row">
+                <button class="primary" id="syncAllButton">Sync all</button>
+                <a class="link-button" href="/fitness.html">Health</a>
+                <button class="danger" id="resetDataButton" type="button">Reset all data</button>
+              </div>
+            </section>
+
+            <section class="panel stack">
+              <h3>Connect providers</h3>
+              <div class="row" id="providerButtons"></div>
+            </section>
+
+            <details class="panel accordion" id="csvImportDetails">
+              <summary class="accordion-summary">
+                <div>
+                  <h3>Import CSV</h3>
+                  <p class="subtitle">
+                    Upload statement exports (accounts + transactions) or a Wealthsimple holdings report (accounts + holdings).
+                  </p>
+                </div>
+              </summary>
+              <div class="stack accordion-content">
+                <div class="row">
+                  <input id="csvInstitutionInput" type="text" placeholder="Institution (optional, e.g. EQ Bank)" />
+                  <input id="csvAccountNameInput" type="text" placeholder="Fallback account name (optional)" />
+                </div>
+                <div class="row">
+                  <select id="csvAccountTypeInput">
+                    <option value="cash">cash</option>
+                    <option value="chequing" selected>chequing</option>
+                    <option value="savings">savings</option>
+                    <option value="investment">investment</option>
+                    <option value="credit_card">credit_card</option>
+                    <option value="loan">loan</option>
+                    <option value="line_of_credit">line_of_credit</option>
+                    <option value="mortgage">mortgage</option>
+                    <option value="other">other</option>
+                  </select>
+                  <input id="csvCurrencyInput" type="text" value="CAD" maxlength="3" placeholder="Currency (CAD)" />
+                  <label class="subtitle" style="display: inline-flex; align-items: center; gap: 8px; margin: 0">
+                    <input
+                      id="csvDayFirstInput"
+                      type="checkbox"
+                      style="min-width: 16px; width: 16px; height: 16px; margin: 0"
+                    />
+                    Parse dates as DD/MM/YYYY
+                  </label>
+                </div>
+                <div class="row">
+                  <input id="csvFileInput" type="file" accept=".csv,text/csv" />
+                  <button id="csvImportButton">Import CSV</button>
+                </div>
+              </div>
+            </details>
+          </div>
+        </section>
+
+      </section>
+
+      <p id="statusText" class="status">Ready.</p>
+    </main>
+
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

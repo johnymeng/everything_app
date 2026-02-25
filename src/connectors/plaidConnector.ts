@@ -222,6 +222,8 @@ export class PlaidConnector implements ProviderConnector {
         const unitPrice = Number(holding.institution_price ?? 0);
         const quantity = Number(holding.quantity ?? 0);
         const value = Number(holding.institution_value ?? quantity * unitPrice);
+        const costBasis =
+          holding.cost_basis === null || holding.cost_basis === undefined ? undefined : Number(holding.cost_basis);
 
         holdings.push({
           externalId: `${holding.account_id}:${holding.security_id}`,
@@ -231,6 +233,7 @@ export class PlaidConnector implements ProviderConnector {
           quantity,
           unitPrice,
           value,
+          costBasis,
           currency:
             security?.iso_currency_code ?? security?.unofficial_currency_code ?? "CAD"
         });

@@ -18,7 +18,11 @@ const manualHoldingSchema = z.object({
   symbol: z.string().min(1).max(32),
   quoteSymbol: z.string().min(1).max(64).optional(),
   name: z.string().min(1).max(120).optional(),
-  quantity: z.number().finite()
+  quantity: z.number().finite(),
+  // Total cost basis for this holding (optional; used for P/L and avg cost).
+  costBasis: z.number().finite().optional(),
+  // Optional fallback used when quotes are unavailable (ex: offline valuation from holdings report exports).
+  unitPrice: z.number().finite().optional()
 });
 
 const manualAccountSchema = z.object({
@@ -157,17 +161,21 @@ export class ManualHoldingsConnector implements ProviderConnector {
       const accountExternalId = account.externalId?.trim() || stableExternalIdFromName(account.name);
       const currency = (account.currency ?? "CAD").toUpperCase();
       const cash = Number(account.cash ?? 0);
+      let accountValue = 0;
 
-      accounts.push({
+      const syncedAccount: SyncedAccount = {
         externalId: accountExternalId,
         name: account.name,
         type: "investment",
         currency,
         balance: 0,
         institutionName: "Wealthsimple"
-      });
+      };
+
+      accounts.push(syncedAccount);
 
       if (cash > 0) {
+        accountValue += cash;
         holdings.push({
           externalId: `${accountExternalId}:${CASH_BALANCE_SYMBOL}`,
           accountExternalId,
@@ -187,12 +195,14 @@ export class ManualHoldingsConnector implements ProviderConnector {
 
         const effectiveQuoteSymbol =
           holding.quoteSymbol ?? normalizeQuoteSymbol(holding.symbol, config.quotes.defaultSuffix);
-        const unitPrice = pricesByQuoteSymbol.get(effectiveQuoteSymbol);
+        const quotedPrice = pricesByQuoteSymbol.get(effectiveQuoteSymbol);
+        const unitPrice = quotedPrice ?? holding.unitPrice;
         if (!unitPrice) {
           throw new Error(`Missing quote for ${holding.symbol} (${effectiveQuoteSymbol}).`);
         }
 
         const value = toMoney(unitPrice * holding.quantity);
+        accountValue += value;
 
         holdings.push({
           externalId: `${accountExternalId}:${holding.symbol}`,
@@ -202,9 +212,12 @@ export class ManualHoldingsConnector implements ProviderConnector {
           quantity: holding.quantity,
           unitPrice: toMoney(unitPrice),
           value,
+          costBasis: holding.costBasis === undefined ? undefined : toMoney(holding.costBasis),
           currency
         });
       }
+
+      syncedAccount.balance = toMoney(accountValue);
     }
 
     return {

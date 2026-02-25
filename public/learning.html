@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Learning • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link" href="/photos.html">Photos</a>
+          <a class="nav-link active" href="/learning.html">Learning</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input type="search" placeholder="Search" aria-label="Search" />
+          </div>
+          <a class="icon-button" href="/">Dashboard</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Learning</div>
+          <h1 class="hero-title">15-minute topics + spaced repetition.</h1>
+          <p class="hero-copy">Pick a focus area, learn something small, then review it later with quick self-quizzes.</p>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section id="authGate" class="panel stack hidden">
+        <h2>Sign in required</h2>
+        <p class="subtitle">This page uses the same account session as the dashboard. Sign in there first.</p>
+        <div class="row">
+          <a class="link" href="/">Go to Sign-In</a>
+        </div>
+      </section>
+
+      <section id="appPanel" class="stack hidden">
+        <section class="panel split">
+          <div>
+            <h2 id="userLabel">Learner</h2>
+            <p class="subtitle" id="modeHint">Set your focus area and start a 15-minute topic.</p>
+          </div>
+          <div class="row">
+            <span class="badge" id="dueBadge">0 due</span>
+            <button id="refreshButton" type="button">Refresh</button>
+          </div>
+        </section>
+
+        <section class="panel stack">
+          <div class="split">
+            <div>
+              <h3>Focus area</h3>
+              <p class="subtitle">This influences which new topics get suggested.</p>
+            </div>
+          </div>
+          <div class="row">
+            <select id="interestSelect" aria-label="Learning focus">
+              <option value="software">Programming / Software</option>
+              <option value="hardware">Hardware</option>
+              <option value="trivia">General trivia</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="panel stack" id="suggestionPanel">
+          <div class="split">
+            <div>
+              <div class="metric-title">Suggested (15 min)</div>
+              <h3 id="suggestionTitle">—</h3>
+              <p class="subtitle" id="suggestionOverview">—</p>
+            </div>
+            <div class="row">
+              <span class="badge" id="suggestionKindBadge">—</span>
+              <button class="primary" id="startTimerButton" type="button">Start timer</button>
+              <button id="completeButton" type="button">Mark learned</button>
+            </div>
+          </div>
+
+          <section class="panel-inner stack">
+            <div class="row">
+              <span class="badge" id="timerBadge">15:00</span>
+              <button id="resetTimerButton" type="button">Reset</button>
+            </div>
+            <ol id="suggestionPlan" class="stack"></ol>
+            <details class="accordion panel">
+              <summary>
+                <div>
+                  <h4>Self-quiz prompts</h4>
+                  <p class="subtitle">Answer from memory, then grade yourself during review.</p>
+                </div>
+              </summary>
+              <div class="accordion-content">
+                <ul id="suggestionQuizPrompts" class="stack"></ul>
+              </div>
+            </details>
+          </section>
+        </section>
+
+        <section class="panel stack">
+          <div class="split">
+            <div>
+              <h3>Reviews due</h3>
+              <p class="subtitle">Quick spaced-repetition check-ins. Rate your recall to schedule the next review.</p>
+            </div>
+          </div>
+          <section class="grid" id="dueGrid" aria-label="Due learning reviews"></section>
+        </section>
+
+        <section class="panel stack">
+          <div class="split">
+            <div>
+              <h3>Recently learned</h3>
+              <p class="subtitle">Your latest completed topics.</p>
+            </div>
+          </div>
+          <section class="grid" id="recentGrid" aria-label="Recent learning topics"></section>
+        </section>
+      </section>
+
+      <p id="statusText" class="status">Ready.</p>
+    </main>
+
+    <script type="module" src="/learning.js"></script>
+  </body>
+</html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Photos • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link active" href="/photos.html">Photos</a>
+          <a class="nav-link" href="/learning.html">Learning</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input type="search" placeholder="Search" aria-label="Search" />
+          </div>
+          <a class="icon-button" href="/">Dashboard</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Photos</div>
+          <h1 class="hero-title">One picture a day.</h1>
+          <p class="hero-copy">Take a daily photo and generate quick collages for a month or year.</p>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section id="authGate" class="panel stack hidden">
+        <h2>Sign in required</h2>
+        <p class="subtitle">This page uses your existing Everything App account session. Sign in on the Dashboard first.</p>
+        <div class="row">
+          <a class="link" href="/">Go to Sign-In</a>
+        </div>
+      </section>
+
+      <section id="appPanel" class="stack hidden">
+        <section class="panel split">
+          <div>
+            <h2 id="userLabel">Photos</h2>
+            <p class="subtitle" id="todayLabel">—</p>
+          </div>
+          <div class="row">
+            <span class="badge" id="dueBadge">—</span>
+            <button id="refreshButton" class="primary" type="button">Refresh</button>
+          </div>
+        </section>
+
+        <section class="layout">
+          <div class="stack">
+            <section class="panel stack">
+              <div class="split">
+                <div>
+                  <h3>Today</h3>
+                  <p class="subtitle">Capture a photo (saved as one-per-day).</p>
+                </div>
+                <div class="row">
+                  <button id="startCameraButton" type="button">Start camera</button>
+                  <button id="stopCameraButton" type="button" class="hidden">Stop</button>
+                  <button id="captureButton" type="button" class="primary hidden">Take photo</button>
+                </div>
+              </div>
+
+              <div class="photo-capture">
+                <video id="cameraVideo" class="photo-preview hidden" playsinline autoplay muted></video>
+                <img id="photoPreview" class="photo-preview hidden" alt="Captured photo preview" />
+                <canvas id="captureCanvas" class="hidden"></canvas>
+              </div>
+
+              <div class="row">
+                <input id="captionInput" type="text" placeholder="Optional caption" maxlength="300" />
+                <button id="retakeButton" type="button" class="hidden">Retake</button>
+                <button id="saveButton" type="button" class="primary hidden">Save</button>
+              </div>
+              <p class="subtitle">Tip: use good lighting; images are compressed to keep uploads fast.</p>
+            </section>
+
+            <section class="panel stack">
+              <div class="split">
+                <div>
+                  <h3>Gallery</h3>
+                  <p class="subtitle">Browse a month of photos.</p>
+                </div>
+                <div class="row">
+                  <input id="monthInput" type="month" aria-label="Month" />
+                  <button id="loadMonthButton" type="button">Load</button>
+                </div>
+              </div>
+              <div id="photoGrid" class="photo-grid" aria-label="Photo grid"></div>
+            </section>
+
+            <section class="panel stack">
+              <div class="split">
+                <div>
+                  <h3>Collage</h3>
+                  <p class="subtitle">Generate a collage you can download.</p>
+                </div>
+                <div class="row">
+                  <select id="collageModeSelect" aria-label="Collage mode">
+                    <option value="month" selected>Month (calendar)</option>
+                    <option value="year">Year (grid)</option>
+                  </select>
+                  <input id="collageMonthInput" type="month" aria-label="Collage month" />
+                  <input id="collageYearInput" type="number" min="2000" max="2100" step="1" class="hidden" />
+                  <input id="collageColumnsInput" type="number" min="5" max="40" step="1" value="20" class="hidden" />
+                  <button id="buildCollageButton" class="primary" type="button">Build</button>
+                  <a id="downloadCollageLink" class="icon-button hidden" download="collage.png" href="#">Download</a>
+                </div>
+              </div>
+              <canvas id="collageCanvas" class="collage-canvas" width="1400" height="1000"></canvas>
+            </section>
+          </div>
+
+          <aside class="stack">
+            <section class="panel stack">
+              <h3>Reminder</h3>
+              <div class="row">
+                <label class="row" style="gap: 8px">
+                  <input id="reminderEnabledInput" type="checkbox" />
+                  <span class="subtitle" style="margin: 0">Enable daily reminder (while the app is open)</span>
+                </label>
+              </div>
+              <div class="row">
+                <label class="subtitle" for="reminderTimeInput" style="min-width: 64px">Time</label>
+                <input id="reminderTimeInput" type="time" />
+                <button id="requestNotificationsButton" type="button">Allow notifications</button>
+              </div>
+              <p class="subtitle">
+                Browsers can’t reliably notify you in the background without push setup. This reminder triggers while you have
+                the app open.
+              </p>
+            </section>
+          </aside>
+        </section>
+      </section>
+
+      <p id="statusText" class="status">Ready.</p>
+    </main>
+
+    <script type="module" src="/photos.js"></script>
+  </body>
+</html>
+

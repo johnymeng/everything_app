@@ -24,6 +24,7 @@ export interface SyncedHolding {
   quantity: number;
   unitPrice: number;
   value: number;
+  costBasis?: number;
   currency: string;
 }
 
