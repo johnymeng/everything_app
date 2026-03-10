@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch Accuracy • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link active" href="/misc.html">Apps</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input id="watchSearchInput" type="search" placeholder="Search watches" aria-label="Search watches" />
+          </div>
+          <a class="icon-button" href="/misc.html">All apps</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Mechanical watch</div>
+          <h1 class="hero-title">Accuracy checker</h1>
+          <p class="hero-copy">
+            When your seconds hand reaches 12 o’clock, click to “mark” the moment, then enter the watch time (hour + minute).
+            Over multiple logs, the app estimates whether each watch is running fast or slow.
+          </p>
+          <div class="row" style="margin-top: 12px">
+            <span class="badge">Multiple watches</span>
+            <span class="badge">LocalStorage</span>
+            <span class="badge">Bar chart</span>
+          </div>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section class="layout">
+        <section class="stack">
+          <section class="panel stack" id="selectedWatchPanel">
+            <div class="split">
+              <div>
+                <div class="metric-title">Selected watch</div>
+                <h2 id="selectedWatchTitle">No watch selected</h2>
+                <p class="subtitle" id="selectedWatchSubtitle">Create a watch on the right to start tracking.</p>
+              </div>
+              <div class="row">
+                <button id="renameWatchButton" type="button" class="hidden">Rename</button>
+                <button id="deleteWatchButton" type="button" class="danger hidden">Delete</button>
+              </div>
+            </div>
+
+            <section class="grid" id="watchSummaryCards" aria-label="Watch summary"></section>
+          </section>
+
+          <section class="panel stack" id="newReadingPanel">
+            <div class="split">
+              <div>
+                <h3>New reading</h3>
+                <p class="subtitle">Step 1: click exactly when the seconds hand hits 12. Step 2: confirm your watch’s hour/minute.</p>
+              </div>
+              <div class="row">
+                <button id="markTwelveButton" type="button" class="primary" disabled>Mark 12 o’clock</button>
+              </div>
+            </div>
+
+            <section id="pendingReadingPanel" class="panel-inner stack hidden" aria-label="Confirm watch time">
+              <div class="row" style="justify-content: space-between">
+                <div>
+                  <div class="metric-title">Reference time captured</div>
+                  <div id="referenceTimeLabel" style="font-weight: 800">—</div>
+                  <p class="subtitle" id="referenceTimeHint">Now enter what your watch shows at that moment.</p>
+                </div>
+                <div class="row">
+                  <button id="useNowButton" type="button">Use current time</button>
+                </div>
+              </div>
+
+              <section class="time-stepper" aria-label="Watch time entry">
+                <div class="time-stepper-field">
+                  <div class="metric-title">Hour</div>
+                  <div class="row">
+                    <button id="hourDownButton" type="button" class="compact" aria-label="Decrease hour">−</button>
+                    <input
+                      id="hourInput"
+                      class="time-stepper-input"
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max="12"
+                      step="1"
+                      aria-label="Watch hour (1 to 12)"
+                    />
+                    <button id="hourUpButton" type="button" class="compact" aria-label="Increase hour">+</button>
+                  </div>
+                </div>
+
+                <div class="time-stepper-field">
+                  <div class="metric-title">Minute</div>
+                  <div class="row">
+                    <button id="minuteDownButton" type="button" class="compact" aria-label="Decrease minute">−</button>
+                    <input
+                      id="minuteInput"
+                      class="time-stepper-input"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      max="59"
+                      step="1"
+                      aria-label="Watch minute (0 to 59)"
+                    />
+                    <button id="minuteUpButton" type="button" class="compact" aria-label="Increase minute">+</button>
+                  </div>
+                </div>
+
+                <div class="time-stepper-preview" aria-live="polite">
+                  <div class="metric-title">Watch time</div>
+                  <div id="watchTimePreview" class="time-preview">—</div>
+                </div>
+              </section>
+
+              <div class="row">
+                <button id="saveReadingButton" type="button" class="primary">Save reading</button>
+                <button id="cancelReadingButton" type="button">Cancel</button>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel stack" id="performancePanel">
+            <div class="split">
+              <div>
+                <h3>Accuracy over time</h3>
+                <p class="subtitle">Bars show estimated seconds gained/lost per day between consecutive readings. Base readings restart the stats.</p>
+              </div>
+              <div class="row">
+                <span class="badge">+ = fast</span>
+                <span class="badge">− = slow</span>
+              </div>
+            </div>
+
+            <div class="chart-wrap">
+              <canvas id="watchRateChart" height="220"></canvas>
+            </div>
+            <p class="status" id="watchChartMeta">Add at least two readings to see performance.</p>
+          </section>
+
+          <section class="panel stack" id="logsPanel">
+            <div class="split">
+              <div>
+                <h3>Readings</h3>
+                <p class="subtitle">Your raw log history. Mark a row as a Base after you set the watch so accuracy restarts from there.</p>
+              </div>
+              <div class="row">
+                <button id="clearAllLogsButton" type="button" class="danger hidden">Clear readings</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <colgroup>
+                  <col style="width: 230px" />
+                  <col style="width: 120px" />
+                  <col style="width: 130px" />
+                  <col style="width: 150px" />
+                  <col style="width: 180px" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Recorded at</th>
+                    <th scope="col">Watch time</th>
+                    <th scope="col">Offset</th>
+                    <th scope="col">Rate</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="logsBody"></tbody>
+              </table>
+            </div>
+            <p id="logsEmptyState" class="status">No readings yet.</p>
+          </section>
+        </section>
+
+        <aside class="stack">
+          <section class="panel stack">
+            <div class="split">
+              <div>
+                <h3>Watches</h3>
+                <p class="subtitle">Track multiple watches independently.</p>
+              </div>
+              <div class="row">
+                <span class="badge" id="watchCountBadge">0</span>
+              </div>
+            </div>
+
+            <div class="selection-list" id="watchList" aria-label="Watch list"></div>
+            <p class="status" id="watchListEmpty">No watches yet.</p>
+
+            <div class="panel-inner stack" aria-label="Add watch">
+              <div>
+                <div class="metric-title">Add watch</div>
+                <p class="subtitle">Example: “Speedmaster”, “Seiko 5”, “Tudor Black Bay”.</p>
+              </div>
+              <div class="row">
+                <input id="newWatchNameInput" type="text" placeholder="Watch name" autocomplete="off" style="min-width: 220px" />
+                <button id="addWatchButton" type="button" class="primary">Add</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel stack">
+            <h3>How to use</h3>
+            <ul class="stack" style="margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.5">
+              <li>Take a reading at the same “12 o’clock seconds” moment each time.</li>
+              <li>If you set the watch, mark that reading as a Base so stats restart from there.</li>
+              <li>Try to log at similar times each day (e.g., morning).</li>
+              <li>Longer intervals produce more stable sec/day estimates.</li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+
+      <p id="statusText" class="status">Ready.</p>
+    </main>
+
+    <script type="module" src="/watch-accuracy.js"></script>
+  </body>
+</html>

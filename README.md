@@ -39,6 +39,10 @@ This build now includes the two hardening steps you asked for:
 cp .env.example .env
 ```
 
+Optional (Learning tab AI tutor):
+- Set `LLM_API_KEY` (or `OPENAI_API_KEY`)
+- Optionally set `LLM_MODEL`, `LLM_BASE_URL`
+
 3. Install dependencies and run:
 
 ```bash

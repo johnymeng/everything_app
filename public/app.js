@@ -1,9 +1,46 @@
 import "./search.js";
 
+const HOLDINGS_SORT_STORAGE_KEY = "finance_tracker_holdings_sort";
+
+const defaultHoldingsSort = {
+  key: "gainPct",
+  direction: "desc"
+};
+
+const holdingsSortKeys = new Set(["gainPct", "profit", "symbol", "name", "quantity", "avgCost", "unitPrice", "value"]);
+
+function loadHoldingsSort() {
+  const raw = localStorage.getItem(HOLDINGS_SORT_STORAGE_KEY);
+  if (!raw) {
+    return { ...defaultHoldingsSort };
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const key = parsed?.key;
+    const direction = parsed?.direction;
+    const safeDirection = direction === "asc" || direction === "desc" ? direction : defaultHoldingsSort.direction;
+
+    if (typeof key !== "string" || !holdingsSortKeys.has(key)) {
+      return { ...defaultHoldingsSort };
+    }
+
+    return { key, direction: safeDirection };
+  } catch (_error) {
+    return { ...defaultHoldingsSort };
+  }
+}
+
+function saveHoldingsSort(sort) {
+  localStorage.setItem(HOLDINGS_SORT_STORAGE_KEY, JSON.stringify(sort));
+}
+
 const state = {
   token: localStorage.getItem("finance_tracker_token") || "",
   user: null,
   providers: [],
+  holdings: [],
+  holdingsSort: loadHoldingsSort(),
   portfolioRange: localStorage.getItem("finance_tracker_portfolio_range") || "1m",
   portfolioHistory: null
 };
@@ -29,6 +66,7 @@ const providerButtons = document.getElementById("providerButtons");
 const summaryCards = document.getElementById("summaryCards");
 const accountsBody = document.getElementById("accountsBody");
 const holdingsBody = document.getElementById("holdingsBody");
+const holdingsTable = document.querySelector("table.holdings-table");
 const liabilitiesBody = document.getElementById("liabilitiesBody");
 const userLabel = document.getElementById("userLabel");
 const modeHint = document.getElementById("modeHint");
@@ -133,6 +171,7 @@ function clearSession() {
   state.token = "";
   state.user = null;
   state.providers = [];
+  state.holdings = [];
   state.portfolioHistory = null;
   localStorage.removeItem("finance_tracker_token");
   authPanel.classList.remove("hidden");
@@ -234,6 +273,242 @@ function shortenHoldingName(name) {
   return `${normalized.slice(0, 41).trimEnd()}…`;
 }
 
+function computeHoldingStats(holding) {
+  const costBasis =
+    holding?.costBasis === null || holding?.costBasis === undefined ? null : Number(holding.costBasis);
+  const quantity = Number(holding?.quantity ?? 0);
+  const hasBasis =
+    costBasis !== null && Number.isFinite(costBasis) && costBasis > 0 && Number.isFinite(quantity) && quantity !== 0;
+  const avgCost = hasBasis ? costBasis / quantity : null;
+  const profit = hasBasis ? Number(holding?.value ?? 0) - costBasis : null;
+  const gainPct = hasBasis ? (profit / costBasis) * 100 : null;
+  const profitClass = profit === null ? "" : profit > 0 ? "positive" : profit < 0 ? "negative" : "";
+
+  return {
+    quantity,
+    hasBasis,
+    avgCost,
+    profit,
+    gainPct,
+    profitClass
+  };
+}
+
+function defaultHoldingsSortDirection(key) {
+  return key === "symbol" || key === "name" ? "asc" : "desc";
+}
+
+function normalizeSortString(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function compareNullableNumbers(left, right, direction) {
+  const leftMissing = left === null || left === undefined || !Number.isFinite(left);
+  const rightMissing = right === null || right === undefined || !Number.isFinite(right);
+
+  if (leftMissing && rightMissing) {
+    return 0;
+  }
+  if (leftMissing) {
+    return 1;
+  }
+  if (rightMissing) {
+    return -1;
+  }
+
+  const delta = left - right;
+  if (delta === 0) {
+    return 0;
+  }
+
+  return direction === "desc" ? -delta : delta;
+}
+
+function compareStrings(left, right, direction) {
+  const delta = left.localeCompare(right, undefined, { sensitivity: "base" });
+  if (delta === 0) {
+    return 0;
+  }
+  return direction === "desc" ? -delta : delta;
+}
+
+function buildHoldingsSortSpec(sort) {
+  const key = sort?.key;
+  const direction = sort?.direction === "asc" || sort?.direction === "desc" ? sort.direction : defaultHoldingsSort.direction;
+
+  if (key === "gainPct") {
+    return [
+      { key: "gainPct", direction, type: "number" },
+      { key: "profit", direction, type: "number" },
+      { key: "symbol", direction: "asc", type: "string" },
+      { key: "name", direction: "asc", type: "string" }
+    ];
+  }
+
+  if (key === "profit") {
+    return [
+      { key: "profit", direction, type: "number" },
+      { key: "gainPct", direction, type: "number" },
+      { key: "symbol", direction: "asc", type: "string" },
+      { key: "name", direction: "asc", type: "string" }
+    ];
+  }
+
+  if (key === "name") {
+    return [
+      { key: "name", direction, type: "string" },
+      { key: "symbol", direction: "asc", type: "string" }
+    ];
+  }
+
+  if (key === "symbol") {
+    return [
+      { key: "symbol", direction, type: "string" },
+      { key: "name", direction: "asc", type: "string" }
+    ];
+  }
+
+  if (typeof key === "string" && holdingsSortKeys.has(key)) {
+    return [
+      { key, direction, type: "number" },
+      { key: "symbol", direction: "asc", type: "string" },
+      { key: "name", direction: "asc", type: "string" }
+    ];
+  }
+
+  return buildHoldingsSortSpec(defaultHoldingsSort);
+}
+
+function sortHoldings(holdings, sort) {
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const spec = buildHoldingsSortSpec(sort);
+
+  const decorated = safeHoldings.map((holding, index) => {
+    const stats = computeHoldingStats(holding);
+    return {
+      holding,
+      index,
+      gainPct: stats.gainPct,
+      profit: stats.profit,
+      symbol: normalizeSortString(holding?.symbol),
+      name: normalizeSortString(holding?.name),
+      quantity: stats.quantity,
+      avgCost: stats.avgCost,
+      unitPrice: Number(holding?.unitPrice ?? NaN),
+      value: Number(holding?.value ?? NaN)
+    };
+  });
+
+  decorated.sort((left, right) => {
+    for (const step of spec) {
+      const leftValue = left[step.key];
+      const rightValue = right[step.key];
+      const delta =
+        step.type === "string"
+          ? compareStrings(leftValue, rightValue, step.direction)
+          : compareNullableNumbers(leftValue, rightValue, step.direction);
+      if (delta !== 0) {
+        return delta;
+      }
+    }
+
+    return left.index - right.index;
+  });
+
+  return decorated.map((item) => item.holding);
+}
+
+function updateHoldingsSortIndicators() {
+  if (!holdingsTable) {
+    return;
+  }
+
+  const headers = holdingsTable.querySelectorAll("thead th[data-sort-key]");
+  for (const header of headers) {
+    const key = header.dataset.sortKey;
+    if (key && key === state.holdingsSort.key) {
+      header.setAttribute("aria-sort", state.holdingsSort.direction === "asc" ? "ascending" : "descending");
+    } else {
+      header.removeAttribute("aria-sort");
+    }
+  }
+}
+
+function setHoldingsSort(nextKey) {
+  if (!nextKey || !holdingsSortKeys.has(nextKey)) {
+    return;
+  }
+
+  const current = state.holdingsSort;
+  const isSameKey = current?.key === nextKey;
+  const nextDirection = isSameKey ? (current.direction === "desc" ? "asc" : "desc") : defaultHoldingsSortDirection(nextKey);
+
+  state.holdingsSort = {
+    key: nextKey,
+    direction: nextDirection
+  };
+
+  saveHoldingsSort(state.holdingsSort);
+  updateHoldingsSortIndicators();
+  renderHoldings(sortHoldings(state.holdings, state.holdingsSort));
+}
+
+function initHoldingsSortControls() {
+  if (!holdingsTable) {
+    return;
+  }
+
+  const thead = holdingsTable.querySelector("thead");
+  if (!thead) {
+    return;
+  }
+
+  thead.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const header = target.closest("th[data-sort-key]");
+    if (!(header instanceof HTMLTableCellElement)) {
+      return;
+    }
+
+    const sortKey = header.dataset.sortKey;
+    if (sortKey) {
+      setHoldingsSort(sortKey);
+    }
+  });
+
+  thead.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const header = target.closest("th[data-sort-key]");
+    if (!(header instanceof HTMLTableCellElement)) {
+      return;
+    }
+
+    const sortKey = header.dataset.sortKey;
+    if (sortKey) {
+      event.preventDefault();
+      setHoldingsSort(sortKey);
+    }
+  });
+
+  updateHoldingsSortIndicators();
+}
+
 function renderSummary(summary) {
   summaryCards.innerHTML = "";
 
@@ -276,27 +551,21 @@ function renderHoldings(holdings) {
   holdingsBody.innerHTML = "";
 
   for (const holding of holdings) {
-    const costBasis =
-      holding.costBasis === null || holding.costBasis === undefined ? null : Number(holding.costBasis);
-    const quantity = Number(holding.quantity ?? 0);
-    const hasBasis = costBasis !== null && Number.isFinite(costBasis) && costBasis > 0 && Number.isFinite(quantity) && quantity !== 0;
-    const avgCost = hasBasis ? costBasis / quantity : null;
-    const profit = hasBasis ? Number(holding.value ?? 0) - costBasis : null;
-    const gainPct = hasBasis ? (profit / costBasis) * 100 : null;
-    const profitClass = profit === null ? "" : profit > 0 ? "positive" : profit < 0 ? "negative" : "";
+    const stats = computeHoldingStats(holding);
 
-    const displayName = shortenHoldingName(holding.name);
-    const title = escapeHtml(holding.name);
+    const holdingName = holding?.name ?? "";
+    const displayName = shortenHoldingName(holdingName);
+    const title = escapeHtml(holdingName);
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${holding.symbol}</td>
+      <td class="pl ${stats.profitClass}">${stats.gainPct === null ? "—" : formatPercent(stats.gainPct)}</td>
+      <td class="pl ${stats.profitClass}">${stats.profit === null ? "—" : currency(stats.profit, holding.currency)}</td>
+      <td>${escapeHtml(holding?.symbol ?? "")}</td>
       <td title="${title}">${escapeHtml(displayName)}</td>
       <td>${holding.quantity}</td>
-      <td>${avgCost === null ? "—" : formatPrice(avgCost, holding.currency)}</td>
+      <td>${stats.avgCost === null ? "—" : formatPrice(stats.avgCost, holding.currency)}</td>
       <td>${formatPrice(holding.unitPrice, holding.currency)}</td>
       <td>${currency(holding.value, holding.currency)}</td>
-      <td class="pl ${profitClass}">${profit === null ? "—" : currency(profit, holding.currency)}</td>
-      <td class="pl ${profitClass}">${gainPct === null ? "—" : formatPercent(gainPct)}</td>
     `;
     holdingsBody.appendChild(row);
   }
@@ -887,7 +1156,8 @@ async function refreshData() {
 
   renderSummary(summary);
   renderAccounts(accounts);
-  renderHoldings(holdings);
+  state.holdings = holdings;
+  renderHoldings(sortHoldings(holdings, state.holdingsSort));
   renderLiabilities(liabilities);
 
   await refreshPortfolioGrowth();
@@ -1038,4 +1308,5 @@ window.addEventListener("resize", () => {
   }
 });
 
+initHoldingsSortControls();
 restoreSession();

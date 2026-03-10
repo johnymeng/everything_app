@@ -18,8 +18,7 @@
           <a class="nav-link active" href="/finance.html">Finance</a>
           <a class="nav-link" href="/fitness.html">Health</a>
           <a class="nav-link" href="/habits.html">Habits</a>
-          <a class="nav-link" href="/photos.html">Photos</a>
-          <a class="nav-link" href="/learning.html">Learning</a>
+          <a class="nav-link" href="/misc.html">Apps</a>
         </nav>
         <div class="topbar-actions">
           <div class="search">
@@ -140,36 +139,36 @@
               </div>
             </section>
 
-	            <section class="panel" id="holdings">
-	              <h3>Holdings</h3>
-	              <div class="table-wrap">
-	                <table class="data-table holdings-table" aria-label="Holdings table">
-	                  <colgroup>
-	                    <col class="col-symbol" />
-	                    <col class="col-name" />
-	                    <col class="col-qty" />
-	                    <col class="col-avg" />
-	                    <col class="col-price" />
-	                    <col class="col-value" />
-	                    <col class="col-pl" />
-	                    <col class="col-gain" />
-	                  </colgroup>
-	                  <thead>
-	                    <tr>
-	                      <th>Symbol</th>
-	                      <th>Name</th>
-	                      <th>Qty</th>
-	                      <th>Avg</th>
-	                      <th>Price</th>
-	                      <th>Value</th>
-	                      <th>P/L</th>
-	                      <th>Gain</th>
-	                    </tr>
-	                  </thead>
-	                  <tbody id="holdingsBody"></tbody>
-	                </table>
-	              </div>
-	            </section>
+            <section class="panel" id="holdings">
+              <h3>Holdings</h3>
+              <div class="table-wrap">
+                <table class="data-table holdings-table" aria-label="Holdings table">
+                  <colgroup>
+                    <col class="col-gain" />
+                    <col class="col-pl" />
+                    <col class="col-symbol" />
+                    <col class="col-name" />
+                    <col class="col-qty" />
+                    <col class="col-avg" />
+                    <col class="col-price" />
+                    <col class="col-value" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th class="sortable" data-sort-key="gainPct" tabindex="0">P/L %</th>
+                      <th class="sortable" data-sort-key="profit" tabindex="0">P/L $</th>
+                      <th class="sortable" data-sort-key="symbol" tabindex="0">Symbol</th>
+                      <th class="sortable" data-sort-key="name" tabindex="0">Name</th>
+                      <th class="sortable" data-sort-key="quantity" tabindex="0">Qty</th>
+                      <th class="sortable" data-sort-key="avgCost" tabindex="0">Avg</th>
+                      <th class="sortable" data-sort-key="unitPrice" tabindex="0">Price</th>
+                      <th class="sortable" data-sort-key="value" tabindex="0">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="holdingsBody"></tbody>
+                </table>
+              </div>
+            </section>
 
             <section class="panel">
               <h3>Liabilities</h3>

@@ -18,14 +18,13 @@
           <a class="nav-link" href="/finance.html">Finance</a>
           <a class="nav-link" href="/fitness.html">Health</a>
           <a class="nav-link" href="/habits.html">Habits</a>
-          <a class="nav-link active" href="/photos.html">Photos</a>
-          <a class="nav-link" href="/learning.html">Learning</a>
+          <a class="nav-link active" href="/misc.html">Apps</a>
         </nav>
         <div class="topbar-actions">
           <div class="search">
             <input type="search" placeholder="Search" aria-label="Search" />
           </div>
-          <a class="icon-button" href="/">Dashboard</a>
+          <a class="icon-button" href="/misc.html">All apps</a>
         </div>
       </div>
     </header>
@@ -34,8 +33,8 @@
       <section class="hero">
         <section class="panel">
           <div class="metric-title">Photos</div>
-          <h1 class="hero-title">One picture a day.</h1>
-          <p class="hero-copy">Take a daily photo and generate quick collages for a month or year.</p>
+          <h1 class="hero-title">Picture a day, or more.</h1>
+          <p class="hero-copy">Capture or import photos and generate quick collages for a month or year.</p>
         </section>
         <section class="hero-art" aria-hidden="true"></section>
       </section>
@@ -66,12 +65,14 @@
               <div class="split">
                 <div>
                   <h3>Today</h3>
-                  <p class="subtitle">Capture a photo (saved as one-per-day).</p>
+                  <p class="subtitle">Capture or import photo/video files for the selected date.</p>
                 </div>
                 <div class="row">
                   <button id="startCameraButton" type="button">Start camera</button>
                   <button id="stopCameraButton" type="button" class="hidden">Stop</button>
                   <button id="captureButton" type="button" class="primary hidden">Take photo</button>
+                  <button id="importPhotosButton" type="button">Import files</button>
+                  <input id="importPhotosInput" type="file" accept="image/*,video/mp4,video/quicktime,.mp4,.mov,.heic,.heif" multiple class="hidden" />
                 </div>
               </div>
 
@@ -82,11 +83,13 @@
               </div>
 
               <div class="row">
+                <label class="subtitle" for="photoDateInput" style="margin: 0">Date</label>
+                <input id="photoDateInput" type="date" />
                 <input id="captionInput" type="text" placeholder="Optional caption" maxlength="300" />
                 <button id="retakeButton" type="button" class="hidden">Retake</button>
                 <button id="saveButton" type="button" class="primary hidden">Save</button>
               </div>
-              <p class="subtitle">Tip: use good lighting; images are compressed to keep uploads fast.</p>
+              <p class="subtitle">Tip: you can import images plus MP4/MOV videos, one or many at a time.</p>
             </section>
 
             <section class="panel stack">
@@ -96,11 +99,16 @@
                   <p class="subtitle">Browse a month of photos.</p>
                 </div>
                 <div class="row">
+                  <button id="galleryToggleButton" type="button">Collapse</button>
+                </div>
+              </div>
+              <div id="galleryBody" class="stack" style="gap: 12px">
+                <div class="row">
                   <input id="monthInput" type="month" aria-label="Month" />
                   <button id="loadMonthButton" type="button">Load</button>
                 </div>
+                <div id="photoGrid" class="photo-grid" aria-label="Photo grid"></div>
               </div>
-              <div id="photoGrid" class="photo-grid" aria-label="Photo grid"></div>
             </section>
 
             <section class="panel stack">
@@ -151,7 +159,29 @@
       <p id="statusText" class="status">Ready.</p>
     </main>
 
+    <div id="photoLightbox" class="photo-lightbox hidden" aria-hidden="true">
+      <button id="photoLightboxBackdrop" class="photo-lightbox-backdrop" type="button" aria-label="Close viewer"></button>
+      <section class="photo-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Photo viewer">
+        <div class="split">
+          <div>
+            <h3 id="photoLightboxTitle" style="margin: 0">Photo</h3>
+            <p id="photoLightboxMeta" class="subtitle" style="margin: 0"></p>
+          </div>
+          <div class="row">
+            <span id="photoLightboxCounter" class="badge">1 / 1</span>
+            <button id="photoLightboxCloseButton" type="button">Close</button>
+          </div>
+        </div>
+        <div id="photoLightboxStage" class="photo-lightbox-stage">
+          <button id="photoLightboxPrevButton" class="photo-lightbox-nav prev" type="button" aria-label="Previous photo">◀</button>
+          <img id="photoLightboxImage" class="photo-lightbox-image" alt="Expanded photo" />
+          <video id="photoLightboxVideo" class="photo-lightbox-image hidden" controls playsinline preload="metadata"></video>
+          <button id="photoLightboxNextButton" class="photo-lightbox-nav next" type="button" aria-label="Next photo">▶</button>
+        </div>
+        <p id="photoLightboxCaption" class="subtitle" style="margin: 0"></p>
+      </section>
+    </div>
+
     <script type="module" src="/photos.js"></script>
   </body>
 </html>
-

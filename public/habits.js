@@ -4,6 +4,7 @@ const state = {
   token: localStorage.getItem("finance_tracker_token") || "",
   user: null,
   habits: [],
+  archivedHabits: [],
   logs: [],
   weeks: Number(localStorage.getItem("everything_habits_weeks") || "12"),
   pendingSave: null
@@ -74,9 +75,13 @@ async function api(path, options = {}) {
   const payload = parseBody();
 
   if (!response.ok) {
+    const details =
+      payload && typeof payload === "object" && "details" in payload && typeof payload.details === "string" ? payload.details : "";
     const errorMessage =
       payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
-        ? payload.error
+        ? details
+          ? `${payload.error}: ${details}`
+          : payload.error
         : contentType.includes("text/html") || trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")
           ? "API returned HTML instead of JSON. Make sure you are running the Express server and opening the app from it (default: http://localhost:4000)."
           : `Request failed (${response.status}).`;
@@ -187,6 +192,10 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function isHexColor(value) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || "").trim());
+}
+
 function renderToday(habits, logMap, todayKey) {
   todayList.innerHTML = "";
 
@@ -210,40 +219,82 @@ function renderToday(habits, logMap, todayKey) {
   }
 }
 
-function renderManage(habits) {
+function renderManage(activeHabits, archivedHabits) {
   manageList.innerHTML = "";
 
-  if (!habits || habits.length === 0) {
+  const hasActive = Array.isArray(activeHabits) && activeHabits.length > 0;
+  const hasArchived = Array.isArray(archivedHabits) && archivedHabits.length > 0;
+
+  if (!hasActive && !hasArchived) {
     manageList.innerHTML = '<p class="subtitle">No habits yet.</p>';
     return;
   }
 
-  for (const habit of habits) {
-    const row = document.createElement("div");
-    row.className = "habit-manage-row";
-    row.innerHTML = `
-      <div class="habit-manage-name">${dot(habit.color)}${escapeHtml(habit.name)}</div>
-      <div class="row">
-        <button type="button" class="danger" data-action="archive" data-habit-id="${habit.id}">Archive</button>
-      </div>
-    `;
+  if (hasActive) {
+    const heading = document.createElement("div");
+    heading.className = "subtitle";
+    heading.textContent = "Active";
+    manageList.appendChild(heading);
 
-    const archiveButton = row.querySelector('button[data-action="archive"]');
-    archiveButton.addEventListener("click", async () => {
-      if (!confirm(`Archive "${habit.name}"? (You can un-archive via API later.)`)) {
-        return;
-      }
-      try {
-        setStatus("Archiving…");
-        await api(`/habits/${habit.id}`, { method: "PATCH", body: JSON.stringify({ archived: true }) });
-        await refresh();
-        setStatus("Archived.");
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Failed to archive.", "error");
-      }
-    });
+    for (const habit of activeHabits) {
+      const row = document.createElement("div");
+      row.className = "habit-manage-row";
+      row.innerHTML = `
+        <div class="habit-manage-name">${dot(habit.color)}${escapeHtml(habit.name)}</div>
+        <div class="row">
+          <button type="button" class="danger" data-action="archive" data-habit-id="${habit.id}">Archive</button>
+        </div>
+      `;
 
-    manageList.appendChild(row);
+      const archiveButton = row.querySelector('button[data-action="archive"]');
+      archiveButton.addEventListener("click", async () => {
+        if (!confirm(`Archive "${habit.name}"? (You can restore it in Manage later.)`)) {
+          return;
+        }
+        try {
+          setStatus("Archiving…");
+          await api(`/habits/${habit.id}`, { method: "PATCH", body: JSON.stringify({ archived: true }) });
+          await refresh();
+          setStatus("Archived.");
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : "Failed to archive.", "error");
+        }
+      });
+
+      manageList.appendChild(row);
+    }
+  }
+
+  if (hasArchived) {
+    const heading = document.createElement("div");
+    heading.className = "subtitle";
+    heading.textContent = "Archived";
+    manageList.appendChild(heading);
+
+    for (const habit of archivedHabits) {
+      const row = document.createElement("div");
+      row.className = "habit-manage-row";
+      row.innerHTML = `
+        <div class="habit-manage-name">${dot(habit.color)}${escapeHtml(habit.name)}</div>
+        <div class="row">
+          <button type="button" class="primary" data-action="unarchive" data-habit-id="${habit.id}">Unarchive</button>
+        </div>
+      `;
+
+      const unarchiveButton = row.querySelector('button[data-action="unarchive"]');
+      unarchiveButton.addEventListener("click", async () => {
+        try {
+          setStatus("Unarchiving…");
+          await api(`/habits/${habit.id}`, { method: "PATCH", body: JSON.stringify({ archived: false }) });
+          await refresh();
+          setStatus("Unarchived.");
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : "Failed to unarchive.", "error");
+        }
+      });
+
+      manageList.appendChild(row);
+    }
   }
 }
 
@@ -373,7 +424,7 @@ function renderAll() {
 
   renderToday(state.habits, logMap, todayKey);
   renderHeatmap(state.habits, logMap, list, todayKey);
-  renderManage(state.habits);
+  renderManage(state.habits, state.archivedHabits);
 }
 
 async function refresh() {
@@ -385,8 +436,10 @@ async function refresh() {
   const from = formatDateKey(start);
   const to = formatDateKey(end);
 
-  const [habits, logs] = await Promise.all([api("/habits"), api(`/habits/logs?from=${from}&to=${to}`)]);
-  state.habits = Array.isArray(habits) ? habits : [];
+  const [habits, logs] = await Promise.all([api("/habits?includeArchived=true"), api(`/habits/logs?from=${from}&to=${to}`)]);
+  const list = Array.isArray(habits) ? habits : [];
+  state.habits = list.filter((habit) => !habit.archivedAt);
+  state.archivedHabits = list.filter((habit) => habit.archivedAt);
   state.logs = Array.isArray(logs) ? logs : [];
   renderAll();
 }
@@ -415,8 +468,31 @@ async function bootstrap() {
     }
 
     try {
+      const normalized = name.toLowerCase();
+      const activeMatch = (state.habits || []).find((habit) => habit.name.toLowerCase() === normalized);
+      if (activeMatch) {
+        setStatus(`"${activeMatch.name}" already exists.`, "warn");
+        return;
+      }
+
+      const archivedMatch = (state.archivedHabits || []).find((habit) => habit.name.toLowerCase() === normalized);
+      if (archivedMatch) {
+        setStatus(`Restoring "${archivedMatch.name}"…`);
+        await api(`/habits/${archivedMatch.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ archived: false, ...(isHexColor(color) ? { color } : {}) })
+        });
+        habitNameInput.value = "";
+        await refresh();
+        setStatus("Restored.");
+        return;
+      }
+
       setStatus("Adding…");
-      await api("/habits", { method: "POST", body: JSON.stringify({ name, color }) });
+      await api("/habits", {
+        method: "POST",
+        body: JSON.stringify({ name, ...(isHexColor(color) ? { color } : {}) })
+      });
       habitNameInput.value = "";
       await refresh();
       setStatus("Added.");

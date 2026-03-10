@@ -67,6 +67,10 @@ const trendThresholdByMetric: Record<FitnessMetric, number> = {
   mile_time: 4
 };
 
+type WeightUnit = "kg" | "lb";
+
+const weightConvertibleMetrics = new Set<FitnessMetric>(["body_weight", "squat_1rm", "bench_1rm", "deadlift_1rm"]);
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -123,6 +127,32 @@ function metricLabel(metric: FitnessMetric): string {
 
 function metricUnit(metric: FitnessMetric): string {
   return metricByKey.get(metric)?.defaultUnit ?? "";
+}
+
+function normalizeWeightUnit(unit: string | undefined): WeightUnit | null {
+  const raw = (unit ?? "").trim().toLowerCase();
+  if (!raw) {
+    return null;
+  }
+
+  if (raw === "kg" || raw === "kgs" || raw === "kilogram" || raw === "kilograms") {
+    return "kg";
+  }
+
+  if (raw === "lb" || raw === "lbs" || raw === "pound" || raw === "pounds") {
+    return "lb";
+  }
+
+  return null;
+}
+
+function convertWeight(value: number, from: WeightUnit, to: WeightUnit): number {
+  if (from === to) {
+    return value;
+  }
+
+  const poundsPerKg = 2.2046226218;
+  return from === "kg" ? value * poundsPerKg : value / poundsPerKg;
 }
 
 function computeTrend(samples: FitnessSample[], metric: FitnessMetric): { direction: "up" | "down" | "flat"; delta: number } | null {
@@ -279,6 +309,64 @@ export class FitnessService {
 
   listMetricCatalog(): MetricCatalogItem[] {
     return metricCatalog;
+  }
+
+  async getMetricHistory(input: {
+    userId: string;
+    metric: FitnessMetric;
+    from: string;
+    to: string;
+    maxPoints?: number;
+  }): Promise<{
+    metric: FitnessMetric;
+    unit: string;
+    from: string;
+    to: string;
+    points: Array<{ recordedAt: string; value: number }>;
+  }> {
+    const samples = await this.repository.listFitnessSamplesByMetric({
+      userId: input.userId,
+      metric: input.metric,
+      from: input.from,
+      to: input.to,
+      limit: 20000
+    });
+
+    const metricDefaultUnit = metricUnit(input.metric);
+    const latestUnit = samples.length > 0 ? samples[samples.length - 1].unit : metricDefaultUnit;
+
+    const normalizedTargetUnit =
+      weightConvertibleMetrics.has(input.metric) ? normalizeWeightUnit(latestUnit) ?? normalizeWeightUnit(metricDefaultUnit) : null;
+
+    const targetUnit = normalizedTargetUnit ?? latestUnit ?? metricDefaultUnit;
+
+    const points = samples.map((sample) => {
+      let value = sample.value;
+
+      if (weightConvertibleMetrics.has(input.metric) && normalizedTargetUnit) {
+        const sampleUnit = normalizeWeightUnit(sample.unit);
+        if (sampleUnit) {
+          value = toFixedNumber(convertWeight(value, sampleUnit, normalizedTargetUnit), 2);
+        }
+      }
+
+      return {
+        recordedAt: sample.recordedAt,
+        value
+      };
+    });
+
+    const maxPoints = Math.max(10, Math.min(input.maxPoints ?? 500, 5000));
+    const downsampled =
+      points.length <= maxPoints ? points : points.filter((_point, index) => index % Math.ceil(points.length / maxPoints) === 0);
+
+    return {
+      metric: input.metric,
+      unit: normalizedTargetUnit ?? targetUnit,
+      from: input.from,
+      to: input.to,
+      points: downsampled
+    };
   }
 
   async syncAppleHealth(userId: string, samples?: SyncSampleInput[]): Promise<{ imported: number; dashboard: FitnessDashboard }> {

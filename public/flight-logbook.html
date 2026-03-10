@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flight Logbook • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link active" href="/misc.html">Apps</a>
+        </nav>
+        <div class="topbar-actions">
+          <a class="icon-button" href="/misc.html">All apps</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Flight logbook</div>
+          <h1 class="hero-title">Globe + flight history tracker</h1>
+          <p class="hero-copy">
+            Look up flights by code, log each trip, and track your Flighty-style metrics over time: most flown aircraft, total
+            kilometers, and delay hours.
+          </p>
+          <div class="row" style="margin-top: 12px">
+            <span class="badge">3D globe</span>
+            <span class="badge">Flight-code lookup</span>
+            <span class="badge">Yearly + all-time stats</span>
+          </div>
+        </section>
+        <section class="hero-art flight-hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section class="layout">
+        <section class="stack">
+          <section class="panel stack">
+            <div class="split">
+              <div>
+                <h2>Flight globe</h2>
+                <p class="subtitle">Drag to spin. Scroll or use the zoom controls to enlarge the globe.</p>
+              </div>
+              <div class="row">
+                <span id="loggedFlightCountBadge" class="badge">0 flights logged</span>
+                <span id="loggedAirportCountBadge" class="badge">0 airports</span>
+              </div>
+            </div>
+
+            <div id="flightMapViewport" class="flight-map-viewport" aria-label="Draggable 3D world globe">
+              <canvas id="flightGlobeCanvas" class="flight-globe-canvas" aria-label="3D globe with airport markers"></canvas>
+              <div class="flight-map-controls" aria-label="Globe zoom controls">
+                <button id="flightZoomOutButton" type="button" class="compact flight-map-control-button" aria-label="Zoom out globe">-</button>
+                <div id="flightZoomValue" class="flight-map-zoom-value" aria-live="polite">100%</div>
+                <button id="flightZoomInButton" type="button" class="compact flight-map-control-button" aria-label="Zoom in globe">+</button>
+                <button id="flightZoomResetButton" type="button" class="compact flight-map-control-button flight-map-control-reset" aria-label="Reset globe zoom">Reset</button>
+              </div>
+            </div>
+            <div class="split">
+              <div>
+                <div class="metric-title">Focused airport</div>
+                <h3 id="flightAirportFocusTitle">No logged airports yet</h3>
+                <p id="flightAirportFocusMeta" class="subtitle">Look up and log flights to populate airport markers on the globe.</p>
+              </div>
+              <div class="row">
+                <button id="openDestinationGalleryButton" type="button" class="compact">Open destination gallery</button>
+              </div>
+            </div>
+            <p id="flightMapStatus" class="status">Drag anywhere on the globe to spin. Scroll or use +/- to zoom.</p>
+          </section>
+
+          <section class="panel stack">
+            <div>
+              <h3>Logged flights</h3>
+              <p class="subtitle">Each logged flight contributes to yearly and all-time analytics.</p>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <colgroup>
+                  <col style="width: 120px" />
+                  <col style="width: 90px" />
+                  <col style="width: 160px" />
+                  <col style="width: 170px" />
+                  <col style="width: 100px" />
+                  <col style="width: 100px" />
+                  <col style="width: 120px" />
+                  <col style="width: 86px" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Code</th>
+                    <th scope="col">Route</th>
+                    <th scope="col">Aircraft</th>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Delay</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="flightHistoryBody"></tbody>
+              </table>
+            </div>
+            <p id="flightHistoryEmpty" class="status">No flights logged yet.</p>
+          </section>
+        </section>
+
+        <aside class="stack">
+          <section class="panel stack">
+            <div>
+              <h3>Flight lookup</h3>
+              <p class="subtitle">Search by flight code and date. Example: <code>AC519</code>.</p>
+            </div>
+            <div class="row">
+              <input
+                id="flightCodeInput"
+                type="text"
+                placeholder="Flight code (e.g., AC519)"
+                aria-label="Flight code lookup"
+                autocomplete="off"
+                style="min-width: 220px"
+              />
+              <input id="flightLookupDateInput" type="date" min="2000-01-01" aria-label="Flight date" style="min-width: 180px" />
+              <button id="flightLookupButton" type="button" class="primary">Find flight</button>
+            </div>
+            <p id="flightLookupStatus" class="status">Enter a flight code and date, then click “Find flight”.</p>
+
+            <section id="flightLookupResult" class="panel-inner stack hidden">
+              <div class="metric-title">Lookup result</div>
+              <h3 id="flightLookupResultTitle">—</h3>
+              <p id="flightLookupResultMeta" class="subtitle">—</p>
+              <section class="grid flight-lookup-grid" aria-label="Lookup result details">
+                <article class="card">
+                  <div class="metric-label">Origin</div>
+                  <div id="lookupOriginValue" class="metric-value">—</div>
+                </article>
+                <article class="card">
+                  <div class="metric-label">Destination</div>
+                  <div id="lookupDestinationValue" class="metric-value">—</div>
+                </article>
+                <article class="card">
+                  <div class="metric-label">Aircraft</div>
+                  <div id="lookupAircraftValue" class="metric-value">—</div>
+                </article>
+                <article class="card">
+                  <div class="metric-label">Delay</div>
+                  <div id="lookupDelayValue" class="metric-value">—</div>
+                </article>
+              </section>
+              <div class="row">
+                <button id="logLookupFlightButton" type="button" class="primary">Log this flight</button>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel stack">
+            <div class="split">
+              <div>
+                <h3>Travel analytics</h3>
+                <p class="subtitle">Automatically computed from your logged flights.</p>
+              </div>
+              <div class="row">
+                <button id="clearFlightHistoryButton" type="button" class="danger">Clear history</button>
+              </div>
+            </div>
+
+            <div class="metric-title">All time</div>
+            <section class="grid flight-stat-grid" aria-label="All-time flight stats">
+              <article class="card">
+                <div class="metric-label">Flights logged</div>
+                <div id="allTimeFlightsValue" class="metric-value">0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">KM travelled</div>
+                <div id="allTimeKmValue" class="metric-value">0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">Delay hours</div>
+                <div id="allTimeDelayHoursValue" class="metric-value">0.0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">Top flown aircraft</div>
+                <div id="allTimeTopAircraftValue" class="metric-value aircraft-top-value">—</div>
+              </article>
+            </section>
+
+            <div class="split">
+              <div class="metric-title">Yearly view</div>
+              <div class="row">
+                <select id="flightStatsYearSelect" aria-label="Select year for stats" style="min-width: 140px"></select>
+              </div>
+            </div>
+            <section class="grid flight-stat-grid" aria-label="Yearly flight stats">
+              <article class="card">
+                <div class="metric-label">Flights logged</div>
+                <div id="yearFlightsValue" class="metric-value">0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">KM travelled</div>
+                <div id="yearKmValue" class="metric-value">0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">Delay hours</div>
+                <div id="yearDelayHoursValue" class="metric-value">0.0</div>
+              </article>
+              <article class="card">
+                <div class="metric-label">Top flown aircraft</div>
+                <div id="yearTopAircraftValue" class="metric-value aircraft-top-value">—</div>
+              </article>
+            </section>
+
+            <div class="split">
+              <div>
+                <div class="metric-title">Trip playback</div>
+                <p class="subtitle">Replay flights in date order for all-time or a selected year.</p>
+              </div>
+            </div>
+            <div class="row">
+              <select id="flightPlaybackYearSelect" aria-label="Select year for trip playback" style="min-width: 170px"></select>
+              <button id="flightPlaybackToggleButton" type="button" class="primary">Play trips</button>
+              <button id="flightPlaybackStopButton" type="button">Stop</button>
+            </div>
+            <p id="flightPlaybackStatus" class="status">Trip playback is idle.</p>
+            <p id="flightAnalyticsStatus" class="status">Stats update each time you log a flight.</p>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <section id="aircraftGalleryModal" class="aircraft-gallery-modal hidden" role="dialog" aria-modal="true" aria-labelledby="aircraftGalleryTitle">
+      <section class="panel stack aircraft-gallery-sheet" aria-label="Aircraft gallery">
+        <div class="split">
+          <div>
+            <div class="metric-title">Aircraft gallery</div>
+            <h3 id="aircraftGalleryTitle">All aircraft flown</h3>
+          </div>
+          <button id="aircraftGalleryCloseButton" type="button" class="compact">Close</button>
+        </div>
+        <p id="aircraftGalleryMeta" class="subtitle">—</p>
+        <section id="aircraftGalleryList" class="aircraft-gallery-list" aria-live="polite"></section>
+      </section>
+    </section>
+
+    <section
+      id="destinationGalleryModal"
+      class="destination-gallery-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="destinationGalleryTitle"
+    >
+      <section class="panel stack destination-gallery-sheet" aria-label="Destination photo gallery">
+        <div class="split">
+          <div>
+            <div class="metric-title">Destination gallery</div>
+            <h3 id="destinationGalleryTitle">Airport photos</h3>
+          </div>
+          <div class="row">
+            <input id="destinationPhotoInput" type="file" accept="image/*" multiple class="hidden" />
+            <button id="destinationGalleryAddButton" type="button" class="primary compact">Add photos</button>
+            <button id="destinationGalleryCloseButton" type="button" class="compact">Close</button>
+          </div>
+        </div>
+        <p id="destinationGalleryMeta" class="subtitle">—</p>
+        <p id="destinationGalleryStatus" class="status">Select a destination to start a gallery.</p>
+        <section id="destinationGalleryList" class="destination-gallery-list" aria-live="polite"></section>
+      </section>
+    </section>
+
+    <script type="module" src="/flight-logbook.js"></script>
+  </body>
+</html>

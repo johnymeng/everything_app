@@ -31,7 +31,7 @@ async function bootstrap(): Promise<void> {
       credentials: true
     })
   );
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "40mb" }));
   app.use(morgan("dev"));
 
   app.use("/api", createApiRouter(financeService, fitnessService, habitService, learningService, photoService, authService));

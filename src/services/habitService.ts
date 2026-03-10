@@ -43,14 +43,14 @@ export class HabitService {
     });
   }
 
-  async listHabits(userId: string): Promise<Habit[]> {
+  async listHabits(userId: string, options?: { includeArchived?: boolean }): Promise<Habit[]> {
     await this.ensureDefaults(userId);
-    return await this.repository.listHabits(userId);
+    return await this.repository.listHabits(userId, Boolean(options?.includeArchived));
   }
 
   async createHabit(userId: string, input: { name: string; color?: string }): Promise<Habit> {
     const name = z.string().trim().min(1).max(60).parse(input.name);
-    const color = input.color ? habitColorSchema.parse(input.color) : "#18d18c";
+    const color = input.color ? habitColorSchema.parse(input.color) : null;
     return await this.repository.createHabit(userId, { name, color });
   }
 

@@ -1,0 +1,911 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "flightCode": "AC1902",
+      "flightDate": "2026-01-13",
+      "origin": {
+        "iata": "YYJ",
+        "name": "Victoria International Airport",
+        "city": "Victoria",
+        "country": "Canada",
+        "lat": 48.6469,
+        "lon": -123.426
+      },
+      "destination": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "aircraft": "Airbus A220-300",
+      "distanceKm": 3385,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC105",
+      "flightDate": "2026-03-07",
+      "origin": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 777-300ER (77W)",
+      "distanceKm": 3357,
+      "delayMinutes": 89
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2023-05-18",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 18
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2023-09-02",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2024-01-14",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 7
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2024-07-27",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 32
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2025-02-09",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2025-10-11",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 14
+    },
+    {
+      "flightCode": "AC519",
+      "flightDate": "2026-02-14",
+      "origin": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+
+    {
+      "flightCode": "AC518",
+      "flightDate": "2023-05-26",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 22
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2023-09-10",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2024-01-22",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 11
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2024-08-04",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2025-02-17",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 24
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2025-10-19",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC518",
+      "flightDate": "2026-02-23",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YVR",
+        "name": "Vancouver International Airport",
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.1947,
+        "lon": -123.1792
+      },
+      "aircraft": "Boeing 737 MAX 8",
+      "distanceKm": 4350,
+      "delayMinutes": 9
+    },
+
+    {
+      "flightCode": "AC589",
+      "flightDate": "2024-03-03",
+      "origin": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 38
+    },
+    {
+      "flightCode": "AC589",
+      "flightDate": "2024-12-07",
+      "origin": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC589",
+      "flightDate": "2025-06-15",
+      "origin": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 12
+    },
+    {
+      "flightCode": "AC589",
+      "flightDate": "2026-01-11",
+      "origin": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 0
+    },
+
+    {
+      "flightCode": "AC590",
+      "flightDate": "2024-03-11",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 5
+    },
+    {
+      "flightCode": "AC590",
+      "flightDate": "2024-12-15",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 28
+    },
+    {
+      "flightCode": "AC590",
+      "flightDate": "2025-06-23",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AC590",
+      "flightDate": "2026-01-19",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "YYZ",
+        "name": "Toronto Pearson International Airport",
+        "city": "Toronto",
+        "country": "Canada",
+        "lat": 43.6777,
+        "lon": -79.6248
+      },
+      "aircraft": "Boeing 787-8",
+      "distanceKm": 7300,
+      "delayMinutes": 0
+    },
+
+    {
+      "flightCode": "UA300",
+      "flightDate": "2024-04-09",
+      "origin": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "destination": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "UA300",
+      "flightDate": "2024-11-14",
+      "origin": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "destination": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 26
+    },
+    {
+      "flightCode": "UA300",
+      "flightDate": "2025-05-04",
+      "origin": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "destination": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 17
+    },
+    {
+      "flightCode": "UA300",
+      "flightDate": "2026-02-01",
+      "origin": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "destination": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 0
+    },
+
+    {
+      "flightCode": "UA301",
+      "flightDate": "2024-04-12",
+      "origin": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "destination": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "UA301",
+      "flightDate": "2025-05-08",
+      "origin": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "destination": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 34
+    },
+    {
+      "flightCode": "UA301",
+      "flightDate": "2026-02-06",
+      "origin": {
+        "iata": "EWR",
+        "name": "Newark Liberty International Airport",
+        "city": "Newark",
+        "country": "United States",
+        "lat": 40.6895,
+        "lon": -74.1745
+      },
+      "destination": {
+        "iata": "SFO",
+        "name": "San Francisco International Airport",
+        "city": "San Francisco",
+        "country": "United States",
+        "lat": 37.6213,
+        "lon": -122.379
+      },
+      "aircraft": "Boeing 777-200",
+      "distanceKm": 4120,
+      "delayMinutes": 0
+    },
+
+    {
+      "flightCode": "DL447",
+      "flightDate": "2025-03-09",
+      "origin": {
+        "iata": "JFK",
+        "name": "John F. Kennedy International Airport",
+        "city": "New York",
+        "country": "United States",
+        "lat": 40.6413,
+        "lon": -73.7781
+      },
+      "destination": {
+        "iata": "LAX",
+        "name": "Los Angeles International Airport",
+        "city": "Los Angeles",
+        "country": "United States",
+        "lat": 33.9425,
+        "lon": -118.4081
+      },
+      "aircraft": "Airbus A321neo",
+      "distanceKm": 3983,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "DL447",
+      "flightDate": "2026-02-15",
+      "origin": {
+        "iata": "JFK",
+        "name": "John F. Kennedy International Airport",
+        "city": "New York",
+        "country": "United States",
+        "lat": 40.6413,
+        "lon": -73.7781
+      },
+      "destination": {
+        "iata": "LAX",
+        "name": "Los Angeles International Airport",
+        "city": "Los Angeles",
+        "country": "United States",
+        "lat": 33.9425,
+        "lon": -118.4081
+      },
+      "aircraft": "Airbus A321neo",
+      "distanceKm": 3983,
+      "delayMinutes": 16
+    },
+
+    {
+      "flightCode": "DL448",
+      "flightDate": "2025-03-14",
+      "origin": {
+        "iata": "LAX",
+        "name": "Los Angeles International Airport",
+        "city": "Los Angeles",
+        "country": "United States",
+        "lat": 33.9425,
+        "lon": -118.4081
+      },
+      "destination": {
+        "iata": "JFK",
+        "name": "John F. Kennedy International Airport",
+        "city": "New York",
+        "country": "United States",
+        "lat": 40.6413,
+        "lon": -73.7781
+      },
+      "aircraft": "Airbus A321neo",
+      "distanceKm": 3983,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "DL448",
+      "flightDate": "2026-02-22",
+      "origin": {
+        "iata": "LAX",
+        "name": "Los Angeles International Airport",
+        "city": "Los Angeles",
+        "country": "United States",
+        "lat": 33.9425,
+        "lon": -118.4081
+      },
+      "destination": {
+        "iata": "JFK",
+        "name": "John F. Kennedy International Airport",
+        "city": "New York",
+        "country": "United States",
+        "lat": 40.6413,
+        "lon": -73.7781
+      },
+      "aircraft": "Airbus A321neo",
+      "distanceKm": 3983,
+      "delayMinutes": 20
+    },
+
+    {
+      "flightCode": "AS837",
+      "flightDate": "2025-08-02",
+      "origin": {
+        "iata": "SEA",
+        "name": "Seattle-Tacoma International Airport",
+        "city": "Seattle",
+        "country": "United States",
+        "lat": 47.4502,
+        "lon": -122.3088
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737-900",
+      "distanceKm": 4300,
+      "delayMinutes": 0
+    },
+    {
+      "flightCode": "AS837",
+      "flightDate": "2026-01-28",
+      "origin": {
+        "iata": "SEA",
+        "name": "Seattle-Tacoma International Airport",
+        "city": "Seattle",
+        "country": "United States",
+        "lat": 47.4502,
+        "lon": -122.3088
+      },
+      "destination": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "aircraft": "Boeing 737-900",
+      "distanceKm": 4300,
+      "delayMinutes": 27
+    },
+
+    {
+      "flightCode": "AS838",
+      "flightDate": "2025-08-11",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "SEA",
+        "name": "Seattle-Tacoma International Airport",
+        "city": "Seattle",
+        "country": "United States",
+        "lat": 47.4502,
+        "lon": -122.3088
+      },
+      "aircraft": "Boeing 737-900",
+      "distanceKm": 4300,
+      "delayMinutes": 8
+    },
+    {
+      "flightCode": "AS838",
+      "flightDate": "2026-02-05",
+      "origin": {
+        "iata": "HNL",
+        "name": "Daniel K. Inouye International Airport",
+        "city": "Honolulu",
+        "country": "United States",
+        "lat": 21.3245,
+        "lon": -157.9251
+      },
+      "destination": {
+        "iata": "SEA",
+        "name": "Seattle-Tacoma International Airport",
+        "city": "Seattle",
+        "country": "United States",
+        "lat": 47.4502,
+        "lon": -122.3088
+      },
+      "aircraft": "Boeing 737-900",
+      "distanceKm": 4300,
+      "delayMinutes": 0
+    }
+  ]
+}

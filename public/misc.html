@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apps • Everything App</title>
+    <link rel="stylesheet" href="/ui.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">FT</span>
+          <span class="brand-name">Everything App</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/finance.html">Finance</a>
+          <a class="nav-link" href="/fitness.html">Health</a>
+          <a class="nav-link" href="/habits.html">Habits</a>
+          <a class="nav-link active" href="/misc.html">Apps</a>
+        </nav>
+        <div class="topbar-actions">
+          <div class="search">
+            <input id="appSearchInput" type="search" placeholder="Search apps" aria-label="Search apps" />
+          </div>
+          <a class="icon-button" href="/">Dashboard</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="page stack">
+      <section class="hero">
+        <section class="panel">
+          <div class="metric-title">Apps</div>
+          <h1 class="hero-title">Mini-apps, utilities, and experiments.</h1>
+          <p class="hero-copy">A lightweight “app store” hub for small tools that live inside Everything App.</p>
+          <div class="row" style="margin-top: 12px">
+            <span class="badge">Local-first</span>
+            <span class="badge">No signup required</span>
+          </div>
+        </section>
+        <section class="hero-art" aria-hidden="true"></section>
+      </section>
+
+      <section class="panel stack">
+        <div class="split">
+          <div>
+            <h2>All apps</h2>
+            <p class="subtitle">Add more mini-apps over time. Search filters instantly.</p>
+          </div>
+          <div class="row">
+            <button id="clearSearchButton" type="button">Clear</button>
+          </div>
+        </div>
+
+        <section id="appsGrid" class="grid" aria-label="Apps">
+          <a class="card app-card" href="/photos.html" data-title="One picture a day photos camera collage journal memories daily">
+            <div class="app-card-top">
+              <div class="app-card-icon" aria-hidden="true">📸</div>
+              <div class="app-card-meta">
+                <div class="metric-title">Capture</div>
+                <h3>One Picture a Day</h3>
+              </div>
+            </div>
+            <p class="subtitle">Capture or import daily photos and generate monthly or yearly collage exports.</p>
+            <div class="row" style="justify-content: space-between">
+              <span class="badge">Daily</span>
+              <span class="link">Open →</span>
+            </div>
+          </a>
+
+          <a class="card app-card" href="/learning.html" data-title="Learning tutor spaced repetition quizzes study topics review">
+            <div class="app-card-top">
+              <div class="app-card-icon" aria-hidden="true">🧠</div>
+              <div class="app-card-meta">
+                <div class="metric-title">Study</div>
+                <h3>Learning</h3>
+              </div>
+            </div>
+            <p class="subtitle">Use an AI tutor and spaced repetition to learn and retain topics over time.</p>
+            <div class="row" style="justify-content: space-between">
+              <span class="badge">Adaptive</span>
+              <span class="link">Open →</span>
+            </div>
+          </a>
+
+          <a class="card app-card" href="/flight-logbook.html" data-title="Flight logbook map destinations airports travel history delays aircraft">
+            <div class="app-card-top">
+              <div class="app-card-icon" aria-hidden="true">✈️</div>
+              <div class="app-card-meta">
+                <div class="metric-title">Travel</div>
+                <h3>Flight Logbook</h3>
+              </div>
+            </div>
+            <p class="subtitle">Explore a draggable world map and start building your destination footprint.</p>
+            <div class="row" style="justify-content: space-between">
+              <span class="badge">Starter</span>
+              <span class="link">Open →</span>
+            </div>
+          </a>
+
+          <a class="card app-card" href="/watch-accuracy.html" data-title="Mechanical watch accuracy checker watch time drift">
+            <div class="app-card-top">
+              <div class="app-card-icon" aria-hidden="true">⌚</div>
+              <div class="app-card-meta">
+                <div class="metric-title">Utility</div>
+                <h3>Mechanical Watch Accuracy Checker</h3>
+              </div>
+            </div>
+            <p class="subtitle">Log the moment your seconds hand hits 12, then track fast/slow over time.</p>
+            <div class="row" style="justify-content: space-between">
+              <span class="badge">New</span>
+              <span class="link">Open →</span>
+            </div>
+          </a>
+
+          <article class="card app-card disabled" aria-disabled="true" data-title="More apps coming soon">
+            <div class="app-card-top">
+              <div class="app-card-icon" aria-hidden="true">＋</div>
+              <div class="app-card-meta">
+                <div class="metric-title">Coming soon</div>
+                <h3>More mini-apps</h3>
+              </div>
+            </div>
+            <p class="subtitle">This page is the hub — drop in more tools whenever you want.</p>
+            <div class="row" style="justify-content: space-between">
+              <span class="badge">Placeholder</span>
+              <span class="subtitle">Not available</span>
+            </div>
+          </article>
+        </section>
+
+        <p id="appsEmptyState" class="status hidden">No apps match your search.</p>
+      </section>
+    </main>
+
+    <script type="module" src="/misc.js"></script>
+  </body>
+</html>

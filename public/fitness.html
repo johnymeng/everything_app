@@ -18,8 +18,7 @@
           <a class="nav-link" href="/finance.html">Finance</a>
           <a class="nav-link active" href="/fitness.html">Health</a>
           <a class="nav-link" href="/habits.html">Habits</a>
-          <a class="nav-link" href="/photos.html">Photos</a>
-          <a class="nav-link" href="/learning.html">Learning</a>
+          <a class="nav-link" href="/misc.html">Apps</a>
         </nav>
         <div class="topbar-actions">
           <div class="search">
@@ -67,6 +66,48 @@
         </section>
 
         <section class="grid" id="latestGrid"></section>
+
+        <section class="panel stack" id="strengthPanel">
+          <div class="chart-head">
+            <div>
+              <div class="metric-title">Strength progression</div>
+              <div class="chart-value" id="strengthLatestValue">—</div>
+              <div class="chart-delta" id="strengthDelta">—</div>
+              <p class="subtitle" id="strengthSubtitle">Track your squat, bench, and deadlift over time.</p>
+            </div>
+            <div class="chart-controls">
+              <select id="strengthMetric" aria-label="Strength lift"></select>
+              <div class="segmented" id="strengthRangeButtons" role="tablist" aria-label="Strength range">
+                <button class="segmented-button" type="button" data-range="1m">1M</button>
+                <button class="segmented-button" type="button" data-range="3m">3M</button>
+                <button class="segmented-button" type="button" data-range="6m">6M</button>
+                <button class="segmented-button" type="button" data-range="1y">1Y</button>
+                <button class="segmented-button" type="button" data-range="all">All</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="strengthChart" height="220"></canvas>
+          </div>
+
+          <p class="status" id="strengthMeta">Log a lift to see your chart.</p>
+        </section>
+
+        <section class="panel stack">
+          <h3>Log Strength Workout</h3>
+          <p class="subtitle">Enter your heaviest set (or 1RM) and watch the trend update.</p>
+          <div class="row">
+            <select id="strengthLogMetric" aria-label="Lift"></select>
+            <input id="strengthLogValue" type="number" step="0.5" placeholder="Weight" />
+            <select id="strengthLogUnit" aria-label="Unit">
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+            </select>
+            <input id="strengthLogRecordedAt" type="datetime-local" />
+            <button id="strengthLogAdd" class="warning">Add Workout</button>
+          </div>
+        </section>
 
         <section class="panel stack">
           <h3>Training Insights</h3>

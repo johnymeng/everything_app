@@ -6,12 +6,22 @@ const state = {
   dashboard: null,
   due: [],
   topicCache: new Map(),
+  tutor: {
+    topic: "",
+    topicKey: "",
+    messages: [],
+    pending: false
+  },
   timer: {
     secondsRemaining: 15 * 60,
     running: false,
     intervalId: null
   }
 };
+
+const tutorStorageKey = "everything_learning_tutor_v1";
+const tutorMaxStoredMessages = 40;
+const tutorMaxRequestMessages = 14;
 
 const authGate = document.getElementById("authGate");
 const appPanel = document.getElementById("appPanel");
@@ -32,6 +42,16 @@ const completeButton = document.getElementById("completeButton");
 const dueGrid = document.getElementById("dueGrid");
 const recentGrid = document.getElementById("recentGrid");
 const statusText = document.getElementById("statusText");
+
+const tutorPanel = document.getElementById("tutorPanel");
+const tutorNewChatButton = document.getElementById("tutorNewChatButton");
+const tutorTopicInput = document.getElementById("tutorTopicInput");
+const tutorTeachButton = document.getElementById("tutorTeachButton");
+const tutorUseSuggestionButton = document.getElementById("tutorUseSuggestionButton");
+const tutorChatLog = document.getElementById("tutorChatLog");
+const tutorComposer = document.getElementById("tutorComposer");
+const tutorMessageInput = document.getElementById("tutorMessageInput");
+const tutorSendButton = document.getElementById("tutorSendButton");
 
 function setStatus(message, tone = "normal") {
   statusText.textContent = message;
@@ -307,6 +327,259 @@ function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, "&#96;");
 }
 
+function defaultTutorTopic() {
+  return state.dashboard?.suggestion?.topic?.title || "SQL indexes";
+}
+
+function defaultTutorTopicKey() {
+  return state.dashboard?.suggestion?.topic?.key || "";
+}
+
+function normalizeTutorMessage(message) {
+  const role = message?.role;
+  const content = typeof message?.content === "string" ? message.content.trim() : "";
+  if ((role !== "user" && role !== "assistant") || !content) {
+    return null;
+  }
+  return { role, content };
+}
+
+function loadTutorFromStorage() {
+  try {
+    const raw = localStorage.getItem(tutorStorageKey);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return;
+
+    const topic = typeof parsed.topic === "string" ? parsed.topic.trim() : "";
+    const topicKey = typeof parsed.topicKey === "string" ? parsed.topicKey.trim() : "";
+    const messages = Array.isArray(parsed.messages) ? parsed.messages.map(normalizeTutorMessage).filter(Boolean) : [];
+
+    state.tutor.topic = topic;
+    state.tutor.topicKey = topicKey;
+    state.tutor.messages = messages.slice(-tutorMaxStoredMessages);
+  } catch (_error) {
+    // Ignore corrupted local state.
+  }
+}
+
+function saveTutorToStorage() {
+  try {
+    localStorage.setItem(
+      tutorStorageKey,
+      JSON.stringify({
+        topic: state.tutor.topic,
+        topicKey: state.tutor.topicKey,
+        messages: state.tutor.messages.slice(-tutorMaxStoredMessages)
+      })
+    );
+  } catch (_error) {
+    // Ignore storage failures (private mode, quota, etc.).
+  }
+}
+
+function setTutorPending(pending) {
+  state.tutor.pending = Boolean(pending);
+
+  if (tutorTeachButton) tutorTeachButton.disabled = state.tutor.pending;
+  if (tutorUseSuggestionButton) tutorUseSuggestionButton.disabled = state.tutor.pending;
+  if (tutorSendButton) tutorSendButton.disabled = state.tutor.pending;
+  if (tutorMessageInput) tutorMessageInput.disabled = state.tutor.pending;
+}
+
+function renderTutor() {
+  if (!tutorPanel || !tutorChatLog) {
+    return;
+  }
+
+  if (tutorTopicInput && state.tutor.topic && tutorTopicInput.value.trim() !== state.tutor.topic) {
+    tutorTopicInput.value = state.tutor.topic;
+  }
+
+  tutorChatLog.innerHTML = "";
+
+  if (!state.tutor.messages || state.tutor.messages.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "subtitle";
+    empty.textContent = "No chat yet. Pick a topic and click “Teach me”, or use the suggested topic.";
+    tutorChatLog.appendChild(empty);
+  } else {
+    for (const message of state.tutor.messages) {
+      const row = document.createElement("div");
+      row.className = `chat-message ${message.role}`;
+
+      const meta = document.createElement("div");
+      meta.className = "chat-meta";
+      meta.textContent = message.role === "user" ? "You" : "Tutor";
+
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble";
+      bubble.textContent = message.content;
+
+      row.appendChild(meta);
+      row.appendChild(bubble);
+      tutorChatLog.appendChild(row);
+    }
+  }
+
+  if (state.tutor.pending) {
+    const row = document.createElement("div");
+    row.className = "chat-message assistant";
+
+    const meta = document.createElement("div");
+    meta.className = "chat-meta";
+    meta.textContent = "Tutor";
+
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble";
+    bubble.textContent = "Thinking…";
+
+    row.appendChild(meta);
+    row.appendChild(bubble);
+    tutorChatLog.appendChild(row);
+  }
+
+  tutorChatLog.scrollTop = tutorChatLog.scrollHeight;
+}
+
+function resetTutorChat({ keepTopic = false } = {}) {
+  const topic = keepTopic ? state.tutor.topic : "";
+  const topicKey = keepTopic ? state.tutor.topicKey : "";
+  state.tutor.topic = topic;
+  state.tutor.topicKey = topicKey;
+  state.tutor.messages = [];
+  setTutorPending(false);
+  saveTutorToStorage();
+  renderTutor();
+}
+
+function ensureTutorTopicFromUi({ preferSuggestion = false } = {}) {
+  const typed = tutorTopicInput ? tutorTopicInput.value.trim() : "";
+
+  if (preferSuggestion) {
+    const key = defaultTutorTopicKey();
+    if (key) {
+      state.tutor.topicKey = key;
+      state.tutor.topic = defaultTutorTopic();
+      if (tutorTopicInput) tutorTopicInput.value = state.tutor.topic;
+      return;
+    }
+  }
+
+  if (typed) {
+    state.tutor.topic = typed;
+    state.tutor.topicKey = "";
+    return;
+  }
+
+  if (!state.tutor.topic) {
+    state.tutor.topic = defaultTutorTopic();
+  }
+}
+
+function tutorRequestMessages() {
+  const safe = Array.isArray(state.tutor.messages) ? state.tutor.messages : [];
+  return safe.slice(-tutorMaxRequestMessages);
+}
+
+async function tutorTurn({ reset = false } = {}) {
+  ensureTutorTopicFromUi();
+
+  if (reset) {
+    state.tutor.messages = [];
+  }
+
+  setTutorPending(true);
+  renderTutor();
+
+  try {
+    const payload = {
+      topic: state.tutor.topic || undefined,
+      topicKey: state.tutor.topicKey || undefined,
+      messages: tutorRequestMessages()
+    };
+    const result = await api("/learning/tutor", { method: "POST", body: JSON.stringify(payload) });
+    const reply = typeof result?.reply === "string" ? result.reply.trim() : "";
+    const resolvedTopic = typeof result?.topic === "string" ? result.topic.trim() : "";
+
+    if (resolvedTopic && resolvedTopic !== state.tutor.topic) {
+      state.tutor.topic = resolvedTopic;
+      if (tutorTopicInput) tutorTopicInput.value = resolvedTopic;
+    }
+
+    if (!reply) {
+      throw new Error("Tutor returned an empty response.");
+    }
+
+    state.tutor.messages.push({ role: "assistant", content: reply });
+    state.tutor.messages = state.tutor.messages.slice(-tutorMaxStoredMessages);
+    saveTutorToStorage();
+    setStatus("Tutor replied.");
+  } catch (error) {
+    const message = error?.message || "Tutor request failed.";
+    state.tutor.messages.push({ role: "assistant", content: `Sorry — ${message}` });
+    state.tutor.messages = state.tutor.messages.slice(-tutorMaxStoredMessages);
+    saveTutorToStorage();
+    setStatus(message, "error");
+  } finally {
+    setTutorPending(false);
+    renderTutor();
+  }
+}
+
+async function startTutorLesson({ preferSuggestion = false } = {}) {
+  resetTutorChat({ keepTopic: false });
+  ensureTutorTopicFromUi({ preferSuggestion });
+  state.tutor.messages = [];
+  saveTutorToStorage();
+  await tutorTurn({ reset: true });
+}
+
+async function sendTutorMessage() {
+  if (!tutorMessageInput) return;
+
+  const text = tutorMessageInput.value.trim();
+  if (!text) return;
+
+  ensureTutorTopicFromUi();
+
+  state.tutor.messages.push({ role: "user", content: text });
+  state.tutor.messages = state.tutor.messages.slice(-tutorMaxStoredMessages);
+  tutorMessageInput.value = "";
+  saveTutorToStorage();
+
+  setStatus("Asking tutor...");
+  setTutorPending(true);
+  renderTutor();
+
+  try {
+    const payload = {
+      topic: state.tutor.topic || undefined,
+      topicKey: state.tutor.topicKey || undefined,
+      messages: tutorRequestMessages()
+    };
+    const result = await api("/learning/tutor", { method: "POST", body: JSON.stringify(payload) });
+    const reply = typeof result?.reply === "string" ? result.reply.trim() : "";
+    if (!reply) {
+      throw new Error("Tutor returned an empty response.");
+    }
+
+    state.tutor.messages.push({ role: "assistant", content: reply });
+    state.tutor.messages = state.tutor.messages.slice(-tutorMaxStoredMessages);
+    saveTutorToStorage();
+    setStatus("Tutor replied.");
+  } catch (error) {
+    const message = error?.message || "Tutor request failed.";
+    state.tutor.messages.push({ role: "assistant", content: `Sorry — ${message}` });
+    state.tutor.messages = state.tutor.messages.slice(-tutorMaxStoredMessages);
+    saveTutorToStorage();
+    setStatus(message, "error");
+  } finally {
+    setTutorPending(false);
+    renderTutor();
+  }
+}
+
 async function refreshAll() {
   if (!state.token) return;
   setStatus("Loading learning...");
@@ -322,7 +595,7 @@ async function refreshAll() {
       userLabel.textContent = name;
     }
     if (modeHint) {
-      modeHint.textContent = "Set your focus area and start a 15-minute topic.";
+      modeHint.textContent = "Chat with the tutor or use a 15-minute topic + spaced repetition.";
     }
 
     if (interestSelect && dashboard?.preference?.interestArea) {
@@ -334,6 +607,14 @@ async function refreshAll() {
     await renderDue(state.due);
     await renderRecent(dashboard?.recent || []);
 
+    if (tutorTopicInput && !tutorTopicInput.value.trim() && !state.tutor.topic) {
+      const suggested = dashboard?.suggestion?.topic?.title;
+      if (suggested) {
+        tutorTopicInput.placeholder = `Topic to learn (suggested: ${suggested})`;
+      }
+    }
+
+    renderTutor();
     setStatus("Learning ready.");
   } catch (error) {
     if (String(error.message || "").toLowerCase().includes("jwt")) {
@@ -350,6 +631,38 @@ async function refreshAll() {
 refreshButton?.addEventListener("click", refreshAll);
 startTimerButton?.addEventListener("click", startOrPauseTimer);
 resetTimerButton?.addEventListener("click", resetTimer);
+
+tutorNewChatButton?.addEventListener("click", () => resetTutorChat({ keepTopic: false }));
+
+tutorTeachButton?.addEventListener("click", async () => {
+  try {
+    setStatus("Starting lesson...");
+    await startTutorLesson({ preferSuggestion: false });
+  } catch (error) {
+    setStatus(error.message || "Failed to start tutor.", "error");
+  }
+});
+
+tutorUseSuggestionButton?.addEventListener("click", async () => {
+  try {
+    setStatus("Starting suggested lesson...");
+    await startTutorLesson({ preferSuggestion: true });
+  } catch (error) {
+    setStatus(error.message || "Failed to start suggested lesson.", "error");
+  }
+});
+
+tutorComposer?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await sendTutorMessage();
+});
+
+tutorMessageInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  if (event.shiftKey) return;
+  event.preventDefault();
+  sendTutorMessage();
+});
 
 interestSelect?.addEventListener("change", async () => {
   try {
@@ -392,5 +705,7 @@ window.addEventListener("beforeunload", () => {
   authGate.classList.add("hidden");
   appPanel.classList.remove("hidden");
   timerBadge.textContent = formatTimer(state.timer.secondsRemaining);
+  loadTutorFromStorage();
+  renderTutor();
   await refreshAll();
 })();

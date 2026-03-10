@@ -260,9 +260,10 @@ CREATE TABLE IF NOT EXISTS daily_photos (
   caption TEXT,
   image BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id, date_key)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE daily_photos DROP CONSTRAINT IF EXISTS daily_photos_user_id_date_key_key;
 
 CREATE INDEX IF NOT EXISTS idx_daily_photos_user_date ON daily_photos(user_id, date_key DESC);
 
@@ -1432,6 +1433,29 @@ export class PostgresRepository {
     return result.rows.map((row: Record<string, unknown>) => mapFitnessSampleRow(row));
   }
 
+  async listFitnessSamplesByMetric(input: {
+    userId: string;
+    metric: FitnessMetric;
+    from: string;
+    to: string;
+    limit?: number;
+  }): Promise<FitnessSample[]> {
+    const limit = Math.max(1, Math.min(input.limit ?? 20000, 50000));
+    const result = await this.pool.query(
+      `SELECT id, user_id, metric, value, unit, source, recorded_at
+       FROM fitness_samples
+       WHERE user_id = $1
+         AND metric = $2
+         AND recorded_at >= $3
+         AND recorded_at <= $4
+       ORDER BY recorded_at ASC
+       LIMIT $5`,
+      [input.userId, input.metric, input.from, input.to, limit]
+    );
+
+    return result.rows.map((row: Record<string, unknown>) => mapFitnessSampleRow(row));
+  }
+
   async upsertFitnessTarget(input: UpsertFitnessTargetInput): Promise<FitnessTarget> {
     const result = await this.pool.query(
       `INSERT INTO fitness_targets (
@@ -1488,21 +1512,46 @@ export class PostgresRepository {
     return result.rows.map((row: Record<string, unknown>) => mapHabitRow(row));
   }
 
-  async createHabit(userId: string, input: { name: string; color: string }): Promise<Habit> {
+  async createHabit(userId: string, input: { name: string; color?: string | null }): Promise<Habit> {
+    const color = input.color ?? null;
+    const id = crypto.randomUUID();
+
     const result = await this.pool.query(
       `INSERT INTO habits (id, user_id, name, color, sort_order)
        VALUES (
          $1,
          $2,
          $3,
-         $4,
+         COALESCE($4, '#18d18c'),
          (SELECT COALESCE(MAX(sort_order) + 1, 0) FROM habits WHERE user_id = $2)
        )
+       ON CONFLICT (user_id, name)
+       DO UPDATE SET
+         archived_at = NULL,
+         color = COALESCE($4, color),
+         updated_at = NOW()
+       WHERE archived_at IS NOT NULL
        RETURNING id, user_id, name, color, sort_order, archived_at, created_at, updated_at`,
-      [crypto.randomUUID(), userId, input.name, input.color]
+      [id, userId, input.name, color]
     );
 
-    return mapHabitRow(result.rows[0]);
+    if ((result.rowCount ?? 0) > 0) {
+      return mapHabitRow(result.rows[0]);
+    }
+
+    const existing = await this.pool.query(
+      `SELECT id, user_id, name, color, sort_order, archived_at, created_at, updated_at
+       FROM habits
+       WHERE user_id = $1 AND name = $2
+       LIMIT 1`,
+      [userId, input.name]
+    );
+
+    if ((existing.rowCount ?? 0) === 0) {
+      throw new Error("Failed to create habit.");
+    }
+
+    return mapHabitRow(existing.rows[0]);
   }
 
   async updateHabit(
@@ -1579,7 +1628,7 @@ export class PostgresRepository {
     });
   }
 
-  async upsertDailyPhoto(input: {
+  async createDailyPhoto(input: {
     userId: string;
     date: string;
     takenAt: string;
@@ -1591,13 +1640,6 @@ export class PostgresRepository {
       `INSERT INTO daily_photos (
          id, user_id, date_key, taken_at, content_type, caption, image
        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (user_id, date_key)
-       DO UPDATE SET
-         taken_at = EXCLUDED.taken_at,
-         content_type = EXCLUDED.content_type,
-         caption = EXCLUDED.caption,
-         image = EXCLUDED.image,
-         updated_at = NOW()
        RETURNING id, user_id, date_key, taken_at, content_type, caption, created_at, updated_at`,
       [
         crypto.randomUUID(),
@@ -1624,7 +1666,7 @@ export class PostgresRepository {
       `SELECT id, user_id, date_key, taken_at, content_type, caption, created_at, updated_at
        FROM daily_photos
        WHERE user_id = $1 AND date_key >= $2 AND date_key <= $3
-       ORDER BY date_key ASC
+       ORDER BY date_key ASC, taken_at ASC, created_at ASC
        LIMIT $4`,
       [input.userId, input.from, input.to, limit]
     );
@@ -1632,20 +1674,16 @@ export class PostgresRepository {
     return result.rows.map((row: Record<string, unknown>) => mapDailyPhotoRow(row));
   }
 
-  async getDailyPhotoForDate(userId: string, date: string): Promise<DailyPhotoMeta | null> {
+  async getDailyPhotosForDate(userId: string, date: string): Promise<DailyPhotoMeta[]> {
     const result = await this.pool.query(
       `SELECT id, user_id, date_key, taken_at, content_type, caption, created_at, updated_at
        FROM daily_photos
        WHERE user_id = $1 AND date_key = $2
-       LIMIT 1`,
+       ORDER BY taken_at ASC, created_at ASC`,
       [userId, date]
     );
 
-    if (result.rowCount === 0) {
-      return null;
-    }
-
-    return mapDailyPhotoRow(result.rows[0]);
+    return result.rows.map((row: Record<string, unknown>) => mapDailyPhotoRow(row));
   }
 
   async getDailyPhotoImage(userId: string, photoId: string): Promise<{ contentType: string; image: Buffer } | null> {
@@ -1668,6 +1706,11 @@ export class PostgresRepository {
     }
 
     return { contentType: String(row.content_type), image };
+  }
+
+  async deleteDailyPhoto(userId: string, photoId: string): Promise<boolean> {
+    const result = await this.pool.query(`DELETE FROM daily_photos WHERE user_id = $1 AND id = $2`, [userId, photoId]);
+    return (result.rowCount ?? 0) > 0;
   }
 
   async deleteDailyPhotoForDate(userId: string, date: string): Promise<boolean> {

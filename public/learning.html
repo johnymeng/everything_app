@@ -18,14 +18,13 @@
           <a class="nav-link" href="/finance.html">Finance</a>
           <a class="nav-link" href="/fitness.html">Health</a>
           <a class="nav-link" href="/habits.html">Habits</a>
-          <a class="nav-link" href="/photos.html">Photos</a>
-          <a class="nav-link active" href="/learning.html">Learning</a>
+          <a class="nav-link active" href="/misc.html">Apps</a>
         </nav>
         <div class="topbar-actions">
           <div class="search">
             <input type="search" placeholder="Search" aria-label="Search" />
           </div>
-          <a class="icon-button" href="/">Dashboard</a>
+          <a class="icon-button" href="/misc.html">All apps</a>
         </div>
       </div>
     </header>
@@ -34,8 +33,8 @@
       <section class="hero">
         <section class="panel">
           <div class="metric-title">Learning</div>
-          <h1 class="hero-title">15-minute topics + spaced repetition.</h1>
-          <p class="hero-copy">Pick a focus area, learn something small, then review it later with quick self-quizzes.</p>
+          <h1 class="hero-title">Learn by chatting + spaced repetition.</h1>
+          <p class="hero-copy">Ask for any topic (or use a suggested one), get a mini-lesson, then review later with quick self-quizzes.</p>
         </section>
         <section class="hero-art" aria-hidden="true"></section>
       </section>
@@ -58,6 +57,43 @@
             <span class="badge" id="dueBadge">0 due</span>
             <button id="refreshButton" type="button">Refresh</button>
           </div>
+        </section>
+
+        <section class="panel stack" id="tutorPanel">
+          <div class="split">
+            <div>
+              <div class="metric-title">AI Tutor</div>
+              <h3>Chat to learn any topic</h3>
+              <p class="subtitle">Pick a topic (or use the suggested one). Ask follow-ups whenever something is unclear.</p>
+            </div>
+            <div class="row">
+              <button id="tutorNewChatButton" type="button">New chat</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <input id="tutorTopicInput" type="text" placeholder="Topic to learn (e.g., SQL indexes)" maxlength="200" />
+            <button class="primary" id="tutorTeachButton" type="button">Teach me</button>
+            <button id="tutorUseSuggestionButton" type="button">Use suggested</button>
+          </div>
+
+          <div id="tutorChatLog" class="chat-log" role="log" aria-label="Tutor chat"></div>
+
+          <form id="tutorComposer" class="chat-composer" autocomplete="off">
+            <label class="sr-only" for="tutorMessageInput">Your message</label>
+            <textarea
+              id="tutorMessageInput"
+              class="chat-input"
+              placeholder="Ask a question or say what you want to focus on..."
+              rows="3"
+              maxlength="8000"
+            ></textarea>
+            <div class="row" style="justify-content: flex-end">
+              <button class="primary" id="tutorSendButton" type="submit">Send</button>
+            </div>
+          </form>
+
+          <p class="subtitle">Tip: Enter sends • Shift+Enter adds a new line.</p>
         </section>
 
         <section class="panel stack">

@@ -148,15 +148,16 @@ function maybeNotifyDailyPhoto(due, todayKey) {
 }
 
 function renderPhotoPanel(photoPayload, todayKey) {
-  const photo = photoPayload?.photo || null;
-  const due = !photo;
+  const photos = Array.isArray(photoPayload?.photos) ? photoPayload.photos : photoPayload?.photo ? [photoPayload.photo] : [];
+  const due = photos.length === 0;
+  const countLabel = photos.length === 1 ? "1 photo" : `${photos.length} photos`;
 
   if (photoStatusTitle) {
-    photoStatusTitle.textContent = due ? "Photo due today" : "Done for today";
+    photoStatusTitle.textContent = due ? "Photo due today" : `${countLabel} today`;
   }
 
   if (photoStatusSubtitle) {
-    photoStatusSubtitle.textContent = due ? `No photo saved for ${todayKey} yet.` : `Saved for ${todayKey}.`;
+    photoStatusSubtitle.textContent = due ? `No photos saved for ${todayKey} yet.` : `Saved ${countLabel} for ${todayKey}.`;
   }
 
   if (photoDueBadge) {
@@ -651,12 +652,19 @@ async function refreshDashboard() {
 
     renderFinanceCards(summary);
     renderHealthDashboard(health);
-    await refreshWealthChart({ metric: state.wealthMetric, range: state.wealthRange });
     renderLearningPanel(learning);
     renderPhotoPanel(todayPhoto, todayKey);
 
     authPanel.classList.add("hidden");
     appPanel.classList.remove("hidden");
+
+    // Ensure canvas layout is measurable before first chart draw.
+    await new Promise((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
+
+    await refreshWealthChart({ metric: state.wealthMetric, range: state.wealthRange });
+
     setStatus("Dashboard ready.");
   } catch (error) {
     if (String(error.message || "").toLowerCase().includes("jwt")) {

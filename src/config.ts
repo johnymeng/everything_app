@@ -37,6 +37,14 @@ export const config = {
   dataFile: process.env.DATA_FILE ?? "data/store.json",
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
   databaseUrl: process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/finance_tracker",
+  llm: {
+    // OpenAI-compatible chat endpoint settings.
+    // Prefer LLM_* env vars; fall back to OPENAI_API_KEY for convenience.
+    apiKey: process.env.LLM_API_KEY ?? process.env.OPENAI_API_KEY ?? "",
+    baseUrl: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
+    model: process.env.LLM_MODEL ?? "gpt-4o-mini",
+    timeoutMs: Number.parseInt(process.env.LLM_TIMEOUT_MS ?? "20000", 10)
+  },
   jwt: {
     secret: process.env.JWT_SECRET ?? "dev-jwt-secret",
     expiresIn: process.env.JWT_EXPIRES_IN ?? "12h"

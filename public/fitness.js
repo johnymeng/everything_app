@@ -4,7 +4,10 @@ const state = {
   token: localStorage.getItem("finance_tracker_token") || "",
   user: null,
   metrics: [],
-  dashboard: null
+  dashboard: null,
+  strengthMetric: localStorage.getItem("fitness_strength_metric") || "squat_1rm",
+  strengthRange: localStorage.getItem("fitness_strength_range") || "6m",
+  strengthHistory: null
 };
 
 const authGate = document.getElementById("authGate");
@@ -15,6 +18,18 @@ const connectionBadge = document.getElementById("connectionBadge");
 const syncButton = document.getElementById("syncButton");
 const payloadInput = document.getElementById("payloadInput");
 const latestGrid = document.getElementById("latestGrid");
+const strengthMetric = document.getElementById("strengthMetric");
+const strengthRangeButtons = document.getElementById("strengthRangeButtons");
+const strengthChart = document.getElementById("strengthChart");
+const strengthLatestValue = document.getElementById("strengthLatestValue");
+const strengthDelta = document.getElementById("strengthDelta");
+const strengthSubtitle = document.getElementById("strengthSubtitle");
+const strengthMeta = document.getElementById("strengthMeta");
+const strengthLogMetric = document.getElementById("strengthLogMetric");
+const strengthLogValue = document.getElementById("strengthLogValue");
+const strengthLogUnit = document.getElementById("strengthLogUnit");
+const strengthLogRecordedAt = document.getElementById("strengthLogRecordedAt");
+const strengthLogAdd = document.getElementById("strengthLogAdd");
 const insightsList = document.getElementById("insightsList");
 const targetsBody = document.getElementById("targetsBody");
 const targetMetric = document.getElementById("targetMetric");
@@ -30,6 +45,8 @@ const sampleUnit = document.getElementById("sampleUnit");
 const sampleRecordedAt = document.getElementById("sampleRecordedAt");
 const addSample = document.getElementById("addSample");
 const statusText = document.getElementById("statusText");
+
+const strengthMetricKeys = ["squat_1rm", "bench_1rm", "deadlift_1rm"];
 
 function setStatus(message, tone = "normal") {
   statusText.textContent = message;
@@ -175,6 +192,176 @@ function renderLatest(latest) {
   }
 }
 
+function setSegmentedActive(container, attribute, value) {
+  const buttons = container?.querySelectorAll(`button[data-${attribute}]`) || [];
+  for (const button of buttons) {
+    button.classList.toggle("active", button.dataset[attribute] === value);
+  }
+}
+
+function resizeCanvasToDisplaySize(canvas) {
+  if (!canvas) {
+    return false;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    return true;
+  }
+
+  return false;
+}
+
+function drawMetricHistoryChart(canvas, metric, points, unit) {
+  if (!canvas) {
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+
+  resizeCanvasToDisplaySize(canvas);
+
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const style = getComputedStyle(document.documentElement);
+  const border = style.getPropertyValue("--border").trim() || "#e6e8eb";
+  const muted = style.getPropertyValue("--muted").trim() || "#5d6672";
+  const accent = style.getPropertyValue("--accent").trim() || "#00a86b";
+  const dpr = window.devicePixelRatio || 1;
+
+  if (!points || points.length === 0) {
+    ctx.fillStyle = muted;
+    ctx.font = `${Math.round(13 * dpr)}px system-ui, -apple-system, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("No lift entries in this range.", width / 2, height / 2);
+    return;
+  }
+
+  const times = points.map((point) => Date.parse(point.recordedAt));
+  const values = points.map((point) => Number(point.value || 0));
+
+  const parsedTimes = times.filter((t) => Number.isFinite(t));
+  const parsedValues = values.filter((v) => Number.isFinite(v));
+
+  if (parsedTimes.length === 0 || parsedValues.length === 0) {
+    ctx.fillStyle = muted;
+    ctx.font = `${Math.round(13 * dpr)}px system-ui, -apple-system, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("No valid chart points.", width / 2, height / 2);
+    return;
+  }
+
+  const minTime = Math.min(...parsedTimes);
+  const maxTime = Math.max(...parsedTimes);
+  const minValue = Math.min(...parsedValues);
+  const maxValue = Math.max(...parsedValues);
+
+  const paddingLeft = Math.round(52 * dpr);
+  const paddingRight = Math.round(16 * dpr);
+  const paddingTop = Math.round(18 * dpr);
+  const paddingBottom = Math.round(24 * dpr);
+
+  const plotWidth = Math.max(1, width - paddingLeft - paddingRight);
+  const plotHeight = Math.max(1, height - paddingTop - paddingBottom);
+
+  const valueRange = maxValue - minValue || Math.max(1, Math.abs(maxValue) * 0.05);
+  const yMin = minValue - valueRange * 0.08;
+  const yMax = maxValue + valueRange * 0.12;
+
+  const xForTime = (time) => {
+    if (maxTime === minTime) {
+      return paddingLeft;
+    }
+    return paddingLeft + ((time - minTime) / (maxTime - minTime)) * plotWidth;
+  };
+
+  const yForValue = (value) => paddingTop + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
+
+  ctx.strokeStyle = border;
+  ctx.lineWidth = Math.max(1, Math.round(1 * dpr));
+
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i += 1) {
+    const y = paddingTop + (i / gridLines) * plotHeight;
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y);
+    ctx.lineTo(width - paddingRight, y);
+    ctx.stroke();
+  }
+
+  const labelFontSize = Math.round(11 * dpr);
+  ctx.font = `${labelFontSize}px system-ui, -apple-system, sans-serif`;
+  ctx.fillStyle = muted;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  const labelValues = [yMax, (yMax + yMin) / 2, yMin];
+  for (const value of labelValues) {
+    const y = yForValue(value);
+    const label = formatMetricValue(metric, value, unit, false);
+    ctx.fillText(label, paddingLeft - Math.round(10 * dpr), y);
+  }
+
+  ctx.lineWidth = Math.max(2, Math.round(2 * dpr));
+  ctx.strokeStyle = accent;
+  ctx.beginPath();
+
+  points.forEach((point, index) => {
+    const time = Date.parse(point.recordedAt);
+    const value = Number(point.value || 0);
+    if (!Number.isFinite(time) || !Number.isFinite(value)) {
+      return;
+    }
+
+    const x = xForTime(time);
+    const y = yForValue(value);
+    if (index === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.14;
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    const time = Date.parse(point.recordedAt);
+    const value = Number(point.value || 0);
+    if (!Number.isFinite(time) || !Number.isFinite(value)) {
+      return;
+    }
+
+    const x = xForTime(time);
+    const y = yForValue(value);
+    if (index === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.lineTo(xForTime(maxTime), paddingTop + plotHeight);
+  ctx.lineTo(xForTime(minTime), paddingTop + plotHeight);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
 function renderInsights(insights) {
   insightsList.innerHTML = "";
 
@@ -293,6 +480,39 @@ function renderDashboard() {
   renderSuggestions(dashboard.suggestedTargets || []);
 }
 
+function populateStrengthSelects() {
+  if (!strengthMetric || !strengthLogMetric) {
+    return;
+  }
+
+  strengthMetric.innerHTML = "";
+  strengthLogMetric.innerHTML = "";
+
+  for (const metricKey of strengthMetricKeys) {
+    const label = metricLabel(metricKey);
+
+    const chartOption = document.createElement("option");
+    chartOption.value = metricKey;
+    chartOption.textContent = label;
+    strengthMetric.appendChild(chartOption);
+
+    const logOption = document.createElement("option");
+    logOption.value = metricKey;
+    logOption.textContent = label;
+    strengthLogMetric.appendChild(logOption);
+  }
+
+  const fallbackMetric = strengthMetricKeys[0];
+  const selectedMetric = strengthMetricKeys.includes(state.strengthMetric) ? state.strengthMetric : fallbackMetric;
+  strengthMetric.value = selectedMetric;
+  strengthLogMetric.value = selectedMetric;
+
+  if (strengthLogUnit) {
+    const defaultUnit = metricUnit(selectedMetric);
+    strengthLogUnit.value = defaultUnit === "lb" ? "lb" : "kg";
+  }
+}
+
 function populateMetricSelects() {
   targetMetric.innerHTML = "";
   sampleMetric.innerHTML = "";
@@ -316,6 +536,85 @@ function populateMetricSelects() {
 async function refreshDashboard() {
   state.dashboard = await api("/fitness/dashboard");
   renderDashboard();
+}
+
+async function refreshStrengthHistory(options = {}) {
+  if (!strengthChart || !strengthMetric) {
+    return;
+  }
+
+  const metric = options.metric || strengthMetric.value || state.strengthMetric;
+  const range = options.range || state.strengthRange || "6m";
+  const maxPoints = options.maxPoints || 500;
+
+  state.strengthMetric = metric;
+  state.strengthRange = range;
+
+  localStorage.setItem("fitness_strength_metric", metric);
+  localStorage.setItem("fitness_strength_range", range);
+
+  setSegmentedActive(strengthRangeButtons, "range", range);
+
+  try {
+    if (strengthMeta) {
+      strengthMeta.textContent = "Loading strength history...";
+      strengthMeta.classList.remove("warn");
+    }
+
+    if (strengthSubtitle) {
+      strengthSubtitle.textContent = `${metricLabel(metric)} • ${range.toUpperCase()} range`;
+    }
+
+    const history = await api(
+      `/fitness/history?metric=${encodeURIComponent(metric)}&range=${encodeURIComponent(range)}&maxPoints=${encodeURIComponent(String(maxPoints))}`
+    );
+    state.strengthHistory = history;
+
+    const points = history.points || [];
+    drawMetricHistoryChart(strengthChart, metric, points, history.unit);
+
+    if (points.length === 0) {
+      if (strengthLatestValue) strengthLatestValue.textContent = "—";
+      if (strengthDelta) {
+        strengthDelta.textContent = "—";
+        strengthDelta.classList.remove("positive", "negative");
+      }
+      if (strengthMeta) {
+        strengthMeta.textContent = "No lift entries yet. Add one below.";
+      }
+      return;
+    }
+
+    const first = points[0];
+    const last = points[points.length - 1];
+    const delta = Number(last.value) - Number(first.value);
+    const direction = metricDirection(metric);
+    const isPositive = direction === "increase" ? delta > 0 : delta < 0;
+
+    if (strengthLatestValue) {
+      strengthLatestValue.textContent = formatMetricValue(metric, last.value, history.unit);
+    }
+
+    if (strengthDelta) {
+      const prefix = delta > 0 ? "+" : "";
+      strengthDelta.textContent = `${prefix}${formatMetricValue(metric, delta, history.unit)}`;
+      strengthDelta.classList.toggle("positive", isPositive);
+      strengthDelta.classList.toggle("negative", !isPositive && delta !== 0);
+    }
+
+    const lastRecordedAt = last.recordedAt ? new Date(last.recordedAt) : null;
+    const lastLabel = lastRecordedAt && !Number.isNaN(lastRecordedAt.getTime()) ? lastRecordedAt.toLocaleDateString() : "unknown date";
+    const pointLabel = points.length === 1 ? "1 entry" : `${points.length} entries`;
+
+    if (strengthMeta) {
+      strengthMeta.textContent = `Last logged ${lastLabel} • ${pointLabel} • Unit: ${history.unit || metricUnit(metric)}`;
+    }
+  } catch (error) {
+    if (strengthMeta) {
+      strengthMeta.textContent = error.message || "Failed to load strength history.";
+      strengthMeta.classList.add("warn");
+    }
+  }
 }
 
 function parsePayload() {
@@ -437,6 +736,44 @@ async function addManualMetricSample() {
   }
 }
 
+async function addStrengthWorkout() {
+  const metric = strengthLogMetric?.value || strengthMetric?.value || "squat_1rm";
+  const value = Number(strengthLogValue?.value);
+  const unit = strengthLogUnit?.value || metricUnit(metric);
+  const recordedAtInput = strengthLogRecordedAt?.value || "";
+
+  if (!Number.isFinite(value)) {
+    setStatus("Enter a valid lift weight.", "error");
+    return;
+  }
+
+  const payload = {
+    metric,
+    value,
+    unit: unit || undefined,
+    recordedAt: recordedAtInput ? new Date(recordedAtInput).toISOString() : undefined
+  };
+
+  try {
+    await api("/fitness/samples", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    if (strengthLogValue) strengthLogValue.value = "";
+    if (strengthLogRecordedAt) strengthLogRecordedAt.value = "";
+
+    if (strengthMetric && strengthMetric.value !== metric) {
+      strengthMetric.value = metric;
+    }
+
+    await Promise.all([refreshDashboard(), refreshStrengthHistory({ metric })]);
+    setStatus(`${metricLabel(metric)} logged.`);
+  } catch (error) {
+    setStatus(error.message || "Could not add strength workout.", "error");
+  }
+}
+
 async function bootAuthenticatedView() {
   authGate.classList.add("hidden");
   appPanel.classList.remove("hidden");
@@ -447,7 +784,9 @@ async function bootAuthenticatedView() {
   state.dashboard = dashboard;
 
   populateMetricSelects();
+  populateStrengthSelects();
   renderDashboard();
+  await refreshStrengthHistory({ metric: strengthMetric?.value || state.strengthMetric, range: state.strengthRange }).catch(() => {});
 }
 
 async function restoreSession() {
@@ -477,8 +816,51 @@ sampleMetric.addEventListener("change", () => {
   sampleUnit.value = metricUnit(sampleMetric.value);
 });
 
+strengthMetric?.addEventListener("change", async () => {
+  const metric = strengthMetric.value;
+  state.strengthMetric = metric;
+  localStorage.setItem("fitness_strength_metric", metric);
+  if (strengthLogMetric) {
+    strengthLogMetric.value = metric;
+  }
+  await refreshStrengthHistory({ metric }).catch(() => {});
+});
+
+strengthLogMetric?.addEventListener("change", async () => {
+  const metric = strengthLogMetric.value;
+  state.strengthMetric = metric;
+  localStorage.setItem("fitness_strength_metric", metric);
+  if (strengthMetric) {
+    strengthMetric.value = metric;
+  }
+  await refreshStrengthHistory({ metric }).catch(() => {});
+});
+
+strengthRangeButtons?.addEventListener("click", async (event) => {
+  const button = event.target?.closest?.("button[data-range]");
+  if (!button) return;
+  const range = button.dataset.range;
+  if (!range) return;
+
+  state.strengthRange = range;
+  localStorage.setItem("fitness_strength_range", range);
+  await refreshStrengthHistory({ range }).catch(() => {});
+});
+
 syncButton.addEventListener("click", syncAppleHealth);
 saveTarget.addEventListener("click", createOrUpdateTarget);
 addSample.addEventListener("click", addManualMetricSample);
+strengthLogAdd?.addEventListener("click", addStrengthWorkout);
+
+window.addEventListener("resize", () => {
+  if (!state.strengthHistory) {
+    return;
+  }
+
+  const metric = strengthMetric?.value || state.strengthMetric;
+  const points = state.strengthHistory?.points || [];
+  const unit = state.strengthHistory?.unit || metricUnit(metric);
+  drawMetricHistoryChart(strengthChart, metric, points, unit);
+});
 
 restoreSession();
